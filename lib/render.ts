@@ -74,8 +74,12 @@ export async function renderVideoWithSubtitles(options: RenderOptions): Promise<
     outputLocation: outputPath,
     inputProps,
     timeoutInMilliseconds: 120000,
-    concurrency: 2,
+    concurrency: 1,
     disallowParallelEncoding: true,
+    chromiumOptions: {
+      disableWebSecurity: true,
+      gl: "swiftshader",
+    },
     onProgress: ({ renderedFrames, encodedFrames, encodedDoneIn, renderedDoneIn, stitchStage }) => {
       console.log(
         `[render] rendered=${renderedFrames}/${durationInFrames}` +
