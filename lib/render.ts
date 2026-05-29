@@ -3,6 +3,13 @@ import os from "os";
 import fs from "fs";
 import { TranscriptionWord } from "./whisper";
 
+export function getBaseUrl(): string {
+  const port = process.env.PORT ?? 3000;
+  return process.env.RAILWAY_PUBLIC_DOMAIN
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+    : `http://localhost:${port}`;
+}
+
 export interface RenderOptions {
   videoPath: string;
   words: TranscriptionWord[];

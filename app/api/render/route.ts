@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, unlink, mkdir } from "fs/promises";
 import path from "path";
 import os from "os";
-import { renderVideoWithSubtitles } from "@/lib/render";
+import { renderVideoWithSubtitles, getBaseUrl } from "@/lib/render";
 import { TranscriptionWord } from "@/lib/whisper";
 
 export const maxDuration = 300;
@@ -38,10 +38,7 @@ export async function POST(req: NextRequest) {
   const outputFilename = `output-${Date.now()}.mp4`;
   const outputPath = path.join(outputsDir, outputFilename);
 
-  const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
-    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-    : `http://${req.headers.get("host") ?? "localhost:3000"}`;
-  const videoUrl = `${baseUrl}/api/video/${inputFilename}`;
+  const videoUrl = `${getBaseUrl()}/api/video/${inputFilename}`;
 
   try {
     const bytes = await file.arrayBuffer();
