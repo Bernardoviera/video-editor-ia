@@ -38,8 +38,10 @@ export async function POST(req: NextRequest) {
   const outputFilename = `output-${Date.now()}.mp4`;
   const outputPath = path.join(outputsDir, outputFilename);
 
-  const host = req.headers.get("host") ?? "localhost:3000";
-  const videoUrl = `http://${host}/api/video/${inputFilename}`;
+  const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+    : `http://${req.headers.get("host") ?? "localhost:3000"}`;
+  const videoUrl = `${baseUrl}/api/video/${inputFilename}`;
 
   try {
     const bytes = await file.arrayBuffer();
