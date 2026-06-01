@@ -9,6 +9,10 @@ import {
   CheckCircle2,
   AlertCircle,
   FileVideo,
+  Wand2,
+  Trash2,
+  Plus,
+  RefreshCw,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -19,13 +23,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { TranscriptionResult, TranscriptionSegment, TranscriptionWord } from "@/lib/whisper";
+import type { AnimationEvent, AnimationType, CaptionStyle, Position } from "@/lib/animationTypes";
 
 const VideoPreview = dynamic(
   () => import("@/components/VideoPreview").then((m) => m.VideoPreview),
   { ssr: false, loading: () => <div className="aspect-video w-full rounded-xl bg-white/4 animate-pulse" /> }
 );
 
-type Step = "idle" | "transcribing" | "review" | "rendering" | "done" | "error";
+type Step = "idle" | "transcribing" | "review" | "analyzing" | "animation-review" | "rendering" | "done" | "error";
+
+const EVENT_LABELS: Record<AnimationType, string> = {
+  dark_overlay:  "🎬 Dark Overlay",
+  text_zoom:     "💥 Text Zoom",
+  emoji_pop:     "😎 Emoji Pop",
+  highlight_box: "📦 Highlight Box",
+  caption_style: "✏️ Caption Style",
+};
+
+const CAPTION_STYLE_INFO: Record<CaptionStyle, { label: string; desc: string }> = {
+  bold:   { label: "BOLD",   desc: "ALL CAPS, fonte grande, outline pesado" },
+  bounce: { label: "BOUNCE", desc: "Palavra atual em vermelho, estilo dinâmico" },
+  clean:  { label: "CLEAN",  desc: "Fade suave, fonte menor, minimalista" },
+};
+
+function fmtTime(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2, "0")}`;
+}
 
 function getVideoDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve) => {
@@ -38,33 +63,38 @@ function getVideoDimensions(file: File): Promise<{ width: number; height: number
       URL.revokeObjectURL(url);
       resolve({ width: w, height: h });
     };
-    vid.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: 1080, height: 1920 });
-    };
+    vid.onerror = () => { URL.revokeObjectURL(url); resolve({ width: 1080, height: 1920 }); };
     vid.src = url;
   });
 }
 
 export default function Home() {
-  const [step, setStep] = useState<Step>("idle");
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number }>({ width: 1080, height: 1920 });
+  const [step, setStep]                   = useState<Step>("idle");
+  const [videoFile, setVideoFile]         = useState<File | null>(null);
+  const [videoDimensions, setVideoDimensions] = useState({ width: 1080, height: 1920 });
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
-  const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
-  const [words, setWords] = useState<TranscriptionWord[]>([]);
+  const [segments, setSegments]           = useState<TranscriptionSegment[]>([]);
+  const [words, setWords]                 = useState<TranscriptionWord[]>([]);
   const [renderProgress, setRenderProgress] = useState(0);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [downloadUrl, setDownloadUrl]     = useState<string | null>(null);
+  const [errorMsg, setErrorMsg]           = useState<string | null>(null);
   const [removeSilencesEnabled, setRemoveSilencesEnabled] = useState(true);
   const [transcribeMsg, setTranscribeMsg] = useState("Transcrevendo com Whisper...");
+  const [captionStyle, setCaptionStyle]   = useState<CaptionStyle>("bounce");
+  const [userPrompt, setUserPrompt]       = useState("");
+  const [animationEvents, setAnimationEvents] = useState<AnimationEvent[]>([]);
+  const [showAddForm, setShowAddForm]     = useState(false);
+  const [newEvent, setNewEvent]           = useState<Partial<AnimationEvent>>({
+    type: "emoji_pop", position: "center", intensity: "medium", duration: 2, content: {}
+  });
+
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, []);
+
+  // ── Upload / transcribe ────────────────────────────────────────────────────
 
   const handleUpload = useCallback(async (file: File) => {
     setVideoFile(file);
@@ -84,12 +114,9 @@ export default function Home() {
       const fd = new FormData();
       fd.append("video", file);
       fd.append("removeSilences", removeSilencesEnabled ? "true" : "false");
-
-      const res = await fetch("/api/transcribe", { method: "POST", body: fd });
+      const res  = await fetch("/api/transcribe", { method: "POST", body: fd });
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.error ?? "Erro na transcrição.");
-
       setTranscription(data);
       setSegments(data.segments ?? []);
       setWords(data.words ?? []);
@@ -102,38 +129,78 @@ export default function Home() {
     }
   }, [removeSilencesEnabled]);
 
+  // ── Segment editing ────────────────────────────────────────────────────────
+
   const handleSegmentsChange = useCallback(
     (updatedSegments: TranscriptionSegment[]) => {
       setSegments(updatedSegments);
-
-      const changedIndex = updatedSegments.findIndex(
-        (seg, i) => seg.text !== segments[i]?.text
-      );
+      const changedIndex = updatedSegments.findIndex((seg, i) => seg.text !== segments[i]?.text);
       if (changedIndex === -1) return;
-
       const changedSeg = updatedSegments[changedIndex];
-      const tokens = changedSeg.text.trim().split(/\s+/).filter(Boolean);
-
+      const tokens     = changedSeg.text.trim().split(/\s+/).filter(Boolean);
       const outsideWords = words.filter(
         (w) => w.end <= changedSeg.start || w.start >= changedSeg.end
       );
-
-      if (tokens.length === 0) {
-        setWords(outsideWords);
-        return;
-      }
-
+      if (tokens.length === 0) { setWords(outsideWords); return; }
       const timePerToken = (changedSeg.end - changedSeg.start) / tokens.length;
       const newWords: TranscriptionWord[] = tokens.map((word, i) => ({
         word,
         start: changedSeg.start + i * timePerToken,
-        end: changedSeg.start + (i + 1) * timePerToken,
+        end:   changedSeg.start + (i + 1) * timePerToken,
       }));
-
       setWords([...outsideWords, ...newWords].sort((a, b) => a.start - b.start));
     },
     [segments, words]
   );
+
+  // ── Analyze ────────────────────────────────────────────────────────────────
+
+  const runAnalyze = useCallback(async () => {
+    setStep("analyzing");
+    setErrorMsg(null);
+    try {
+      const res  = await fetch("/api/analyze", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ segments, userPrompt, captionStyle }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro na análise.");
+      setAnimationEvents(data.events ?? []);
+      setStep("animation-review");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Erro desconhecido.");
+      setStep("error");
+    }
+  }, [segments, userPrompt, captionStyle]);
+
+  // ── Animation event CRUD ───────────────────────────────────────────────────
+
+  const deleteEvent = (id: string) =>
+    setAnimationEvents((prev) => prev.filter((e) => e.id !== id));
+
+  const updateEvent = (id: string, patch: Partial<AnimationEvent>) =>
+    setAnimationEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+
+  const addEvent = () => {
+    if (!newEvent.type) return;
+    const event: AnimationEvent = {
+      id:        `manual-${Date.now()}`,
+      type:      newEvent.type as AnimationType,
+      startTime: newEvent.startTime ?? 0,
+      duration:  newEvent.duration  ?? 2,
+      content:   newEvent.content   ?? {},
+      position:  newEvent.position  as Position ?? "center",
+      intensity: newEvent.intensity as "low" | "medium" | "high" ?? "medium",
+    };
+    setAnimationEvents((prev) =>
+      [...prev, event].sort((a, b) => a.startTime - b.startTime)
+    );
+    setShowAddForm(false);
+    setNewEvent({ type: "emoji_pop", position: "center", intensity: "medium", duration: 2, content: {} });
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   const handleRender = useCallback(async () => {
     if (!videoFile || !transcription) return;
@@ -142,11 +209,13 @@ export default function Home() {
 
     try {
       const fd = new FormData();
-      fd.append("video", videoFile);
-      fd.append("words", JSON.stringify(words));
-      fd.append("duration", String(transcription.duration));
-      fd.append("width", String(videoDimensions.width));
-      fd.append("height", String(videoDimensions.height));
+      fd.append("video",           videoFile);
+      fd.append("words",           JSON.stringify(words));
+      fd.append("duration",        String(transcription.duration));
+      fd.append("width",           String(videoDimensions.width));
+      fd.append("height",          String(videoDimensions.height));
+      fd.append("captionStyle",    captionStyle);
+      fd.append("animationEvents", JSON.stringify(animationEvents));
 
       const res = await fetch("/api/render", { method: "POST", body: fd });
       if (!res.ok) {
@@ -174,54 +243,42 @@ export default function Home() {
             return;
           }
 
-          // status === "done"
           setRenderProgress(100);
 
           const dlRes = await fetch(`/api/render/download?jobId=${jobId}`);
           if (!dlRes.ok) throw new Error("Erro ao baixar o vídeo.");
 
           const blob = await dlRes.blob();
-          const url = URL.createObjectURL(blob);
-
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "video-legendado.mp4";
-          a.click();
-
+          const url  = URL.createObjectURL(blob);
+          const a    = document.createElement("a");
+          a.href = url; a.download = "video-legendado.mp4"; a.click();
           setDownloadUrl(url);
           setStep("done");
         } catch (pollErr) {
-          if (pollingRef.current) {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
-          }
+          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
           setErrorMsg(pollErr instanceof Error ? pollErr.message : "Erro desconhecido.");
           setStep("error");
         }
       }, 2000);
-
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erro desconhecido.");
       setStep("error");
     }
-  }, [videoFile, transcription, words, videoDimensions]);
+  }, [videoFile, transcription, words, videoDimensions, captionStyle, animationEvents]);
+
+  // ── Reset ──────────────────────────────────────────────────────────────────
 
   const reset = () => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
+    if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
     if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-    setStep("idle");
-    setVideoFile(null);
+    setStep("idle"); setVideoFile(null);
     setVideoDimensions({ width: 1080, height: 1920 });
-    setTranscription(null);
-    setSegments([]);
-    setWords([]);
-    setRenderProgress(0);
-    setDownloadUrl(null);
-    setErrorMsg(null);
+    setTranscription(null); setSegments([]); setWords([]);
+    setRenderProgress(0); setDownloadUrl(null); setErrorMsg(null);
+    setAnimationEvents([]); setUserPrompt(""); setShowAddForm(false);
   };
+
+  // ── JSX ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -235,20 +292,14 @@ export default function Home() {
             <span className="font-semibold text-sm tracking-tight">VideoEditor IA</span>
             <Badge variant="secondary" className="text-[10px]">Beta</Badge>
           </div>
-
           {step !== "idle" && (
-            <button
-              onClick={reset}
-              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              <RotateCcw className="h-3 w-3" />
-              Novo vídeo
+            <button onClick={reset} className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors">
+              <RotateCcw className="h-3 w-3" /> Novo vídeo
             </button>
           )}
         </div>
       </header>
 
-      {/* Main */}
       <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12">
         {/* Hero */}
         {step === "idle" && (
@@ -257,36 +308,71 @@ export default function Home() {
               <Sparkles className="h-3 w-3" />
               Powered by OpenAI Whisper + FFmpeg
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-white mb-3">
-              Editor de Vídeo com IA
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight text-white mb-3">Editor de Vídeo com IA</h1>
             <p className="text-white/50 max-w-md mx-auto">
-              Faça upload de um vídeo, transcreva automaticamente com Whisper e exporte com legendas animadas sincronizadas.
+              Upload → Transcrição → Animações geradas por IA → Export com legendas
             </p>
           </div>
         )}
 
         <div className="grid gap-6">
-          {/* Upload Card */}
+
+          {/* ── Upload ─────────────────────────────────────────────────────── */}
           {(step === "idle" || step === "error") && (
             <Card>
               <CardHeader>
                 <CardTitle>Upload de Vídeo</CardTitle>
                 <CardDescription>Arraste ou selecione um arquivo MP4, MOV ou AVI</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <VideoUpload onUpload={handleUpload} />
-                <label className="flex items-center gap-2.5 mt-4 cursor-pointer select-none w-fit">
+
+                {/* Caption style selector */}
+                <div>
+                  <p className="text-xs text-white/40 mb-2 font-medium uppercase tracking-wide">Estilo de legenda</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.entries(CAPTION_STYLE_INFO) as [CaptionStyle, { label: string; desc: string }][]).map(([style, info]) => (
+                      <button
+                        key={style}
+                        onClick={() => setCaptionStyle(style)}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          captionStyle === style
+                            ? "border-[#00c4f0] bg-[#00c4f0]/10"
+                            : "border-white/10 bg-white/4 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="text-xs font-bold text-white">{info.label}</div>
+                        <div className="text-[10px] text-white/40 mt-0.5 leading-tight">{info.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* AI prompt */}
+                <div>
+                  <p className="text-xs text-white/40 mb-2 font-medium uppercase tracking-wide">Instruções para a IA (opcional)</p>
+                  <textarea
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    placeholder="Ex: Foco nos momentos de impacto, use emojis de negócios, destaque números e estatísticas"
+                    rows={2}
+                    className="w-full p-3 rounded-xl bg-white/4 border border-white/10 text-sm text-white placeholder-white/25 resize-none focus:outline-none focus:border-[#00c4f0]/50 transition-colors"
+                  />
+                </div>
+
+                {/* Silence toggle */}
+                <label className="flex items-center gap-2.5 cursor-pointer select-none w-fit">
                   <input
                     type="checkbox"
                     checked={removeSilencesEnabled}
                     onChange={(e) => setRemoveSilencesEnabled(e.target.checked)}
-                    className="w-4 h-4 accent-[#00c4f0] rounded"
+                    className="w-4 h-4 accent-[#00c4f0]"
                   />
                   <span className="text-sm text-white/50">Remover silêncios automaticamente</span>
                 </label>
+
                 {step === "error" && errorMsg && (
-                  <div className="flex items-start gap-2 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
                     <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-red-400">Ocorreu um erro</p>
@@ -298,7 +384,7 @@ export default function Home() {
             </Card>
           )}
 
-          {/* Transcribing */}
+          {/* ── Transcribing ────────────────────────────────────────────────── */}
           {step === "transcribing" && (
             <Card>
               <CardContent className="pt-6">
@@ -311,19 +397,16 @@ export default function Home() {
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-medium text-white">{transcribeMsg}</p>
-                    <p className="text-xs text-white/40 mt-1">
-                      {videoFile?.name} • Isso pode levar alguns segundos
-                    </p>
+                    <p className="text-xs text-white/40 mt-1">{videoFile?.name} • Isso pode levar alguns segundos</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Review step */}
+          {/* ── Review ──────────────────────────────────────────────────────── */}
           {step === "review" && transcription && videoFile && (
             <>
-              {/* Preview */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -332,8 +415,7 @@ export default function Home() {
                       <CardDescription>Visualize o resultado antes de exportar</CardDescription>
                     </div>
                     <Badge variant="success">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Transcrito
+                      <CheckCircle2 className="h-3 w-3 mr-1" /> Transcrito
                     </Badge>
                   </div>
                 </CardHeader>
@@ -347,7 +429,6 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              {/* Transcription editor */}
               <Card>
                 <CardHeader>
                   <CardTitle>Transcrição</CardTitle>
@@ -363,31 +444,196 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              {/* Export action */}
-              <div className="flex justify-end">
-                <Button size="lg" onClick={handleRender} className="gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  Renderizar e Exportar MP4
+              <div className="flex justify-between items-center">
+                <Button variant="outline" onClick={handleRender} className="gap-2">
+                  Renderizar sem animações
+                </Button>
+                <Button size="lg" onClick={runAnalyze} className="gap-2">
+                  <Wand2 className="h-4 w-4" />
+                  Analisar com IA
                 </Button>
               </div>
             </>
           )}
 
-          {/* Rendering */}
+          {/* ── Analyzing ───────────────────────────────────────────────────── */}
+          {step === "analyzing" && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <div className="h-12 w-12 rounded-full bg-[#00c4f0]/10 flex items-center justify-center">
+                    <Wand2 className="h-5 w-5 text-[#00c4f0] animate-pulse" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-white">A IA está analisando seu vídeo...</p>
+                    <p className="text-xs text-white/40 mt-1">Identificando momentos de impacto e gerando animações</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Animation Review ────────────────────────────────────────────── */}
+          {step === "animation-review" && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Animações Sugeridas pela IA</CardTitle>
+                  <CardDescription>Revise, edite ou remova as animações antes de renderizar</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {animationEvents.length === 0 && (
+                    <p className="text-sm text-white/40 text-center py-4">Nenhuma animação — clique em "Adicionar" ou regenere.</p>
+                  )}
+
+                  {animationEvents.map((event) => (
+                    <div key={event.id} className="flex items-start gap-3 p-3 rounded-xl bg-white/4 border border-white/8">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-xs font-medium text-white">{EVENT_LABELS[event.type]}</span>
+                          <span className="text-xs text-white/40">{fmtTime(event.startTime)} → {fmtTime(event.startTime + event.duration)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={event.content.text ?? ""}
+                            onChange={(e) => updateEvent(event.id, { content: { ...event.content, text: e.target.value } })}
+                            placeholder="Texto (opcional)"
+                            className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none focus:border-[#00c4f0]/50"
+                          />
+                          <input
+                            type="text"
+                            value={event.content.emoji ?? ""}
+                            onChange={(e) => updateEvent(event.id, { content: { ...event.content, emoji: e.target.value } })}
+                            placeholder="Emoji"
+                            className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none focus:border-[#00c4f0]/50"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <label className="text-[10px] text-white/40">Início</label>
+                          <input
+                            type="number"
+                            value={event.startTime}
+                            step={0.5}
+                            min={0}
+                            onChange={(e) => updateEvent(event.id, { startTime: parseFloat(e.target.value) || 0 })}
+                            className="w-16 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
+                          />
+                          <label className="text-[10px] text-white/40">Duração</label>
+                          <input
+                            type="number"
+                            value={event.duration}
+                            step={0.5}
+                            min={0.5}
+                            max={10}
+                            onChange={(e) => updateEvent(event.id, { duration: parseFloat(e.target.value) || 1 })}
+                            className="w-16 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <button onClick={() => deleteEvent(event.id)} className="text-white/25 hover:text-red-400 transition-colors mt-0.5">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Add form */}
+                  {showAddForm ? (
+                    <div className="p-3 rounded-xl bg-white/4 border border-[#00c4f0]/20 space-y-2">
+                      <p className="text-xs font-medium text-white">Nova animação</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={newEvent.type}
+                          onChange={(e) => setNewEvent((p) => ({ ...p, type: e.target.value as AnimationType }))}
+                          className="px-2 py-1.5 rounded-lg bg-[#0d0d12] border border-white/10 text-xs text-white focus:outline-none"
+                        >
+                          {(Object.keys(EVENT_LABELS) as AnimationType[]).map((t) => (
+                            <option key={t} value={t}>{EVENT_LABELS[t]}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={newEvent.position}
+                          onChange={(e) => setNewEvent((p) => ({ ...p, position: e.target.value as Position }))}
+                          className="px-2 py-1.5 rounded-lg bg-[#0d0d12] border border-white/10 text-xs text-white focus:outline-none"
+                        >
+                          <option value="center">Centro</option>
+                          <option value="top">Topo</option>
+                          <option value="bottom">Rodapé</option>
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Texto"
+                          onChange={(e) => setNewEvent((p) => ({ ...p, content: { ...p.content, text: e.target.value } }))}
+                          className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Emoji"
+                          onChange={(e) => setNewEvent((p) => ({ ...p, content: { ...p.content, emoji: e.target.value } }))}
+                          className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none"
+                        />
+                        <div className="flex items-center gap-1">
+                          <label className="text-[10px] text-white/40 shrink-0">Início (s)</label>
+                          <input
+                            type="number"
+                            defaultValue={0}
+                            step={0.5}
+                            onChange={(e) => setNewEvent((p) => ({ ...p, startTime: parseFloat(e.target.value) || 0 }))}
+                            className="flex-1 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <label className="text-[10px] text-white/40 shrink-0">Dur. (s)</label>
+                          <input
+                            type="number"
+                            defaultValue={2}
+                            step={0.5}
+                            min={0.5}
+                            onChange={(e) => setNewEvent((p) => ({ ...p, duration: parseFloat(e.target.value) || 2 }))}
+                            className="flex-1 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={addEvent} className="gap-1"><Plus className="h-3 w-3" />Adicionar</Button>
+                        <Button size="sm" variant="outline" onClick={() => setShowAddForm(false)}>Cancelar</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowAddForm(true)}
+                      className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 transition-colors py-1"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Adicionar animação manualmente
+                    </button>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-between items-center">
+                <Button variant="outline" onClick={runAnalyze} className="gap-2">
+                  <RefreshCw className="h-4 w-4" /> Regenerar sugestões
+                </Button>
+                <Button size="lg" onClick={handleRender} className="gap-2">
+                  <Sparkles className="h-4 w-4" /> Renderizar vídeo
+                </Button>
+              </div>
+            </>
+          )}
+
+          {/* ── Rendering ───────────────────────────────────────────────────── */}
           {step === "rendering" && (
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-col gap-6 py-6">
                   <div className="flex flex-col items-center gap-4">
-                    <div className="relative">
-                      <div className="h-12 w-12 rounded-full bg-[#00c4f0]/10 flex items-center justify-center">
-                        <Loader2 className="h-5 w-5 text-[#00c4f0] animate-spin" />
-                      </div>
+                    <div className="h-12 w-12 rounded-full bg-[#00c4f0]/10 flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 text-[#00c4f0] animate-spin" />
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-white">Renderizando vídeo...</p>
                       <p className="text-xs text-white/40 mt-1">
-                        Processando com FFmpeg • {renderProgress}%
+                        Processando com FFmpeg{animationEvents.length > 0 ? " + Remotion" : ""} • {renderProgress}%
                       </p>
                     </div>
                   </div>
@@ -397,7 +643,7 @@ export default function Home() {
             </Card>
           )}
 
-          {/* Done */}
+          {/* ── Done ────────────────────────────────────────────────────────── */}
           {step === "done" && downloadUrl && (
             <Card>
               <CardContent className="pt-6">
@@ -407,9 +653,7 @@ export default function Home() {
                   </div>
                   <div className="text-center">
                     <p className="text-base font-semibold text-white">Vídeo pronto!</p>
-                    <p className="text-sm text-white/40 mt-1">
-                      Seu vídeo foi renderizado com as legendas animadas
-                    </p>
+                    <p className="text-sm text-white/40 mt-1">Seu vídeo foi renderizado com as legendas animadas</p>
                   </div>
                   <div className="flex gap-3">
                     <a
@@ -417,12 +661,10 @@ export default function Home() {
                       download="video-legendado.mp4"
                       className="inline-flex items-center justify-center gap-2 h-12 px-6 text-base rounded-lg font-medium bg-[#00c4f0] text-black hover:bg-[#00b0d8] shadow-[0_0_16px_rgba(0,196,240,0.3)] transition-all"
                     >
-                      <Download className="h-4 w-4" />
-                      Baixar MP4
+                      <Download className="h-4 w-4" /> Baixar MP4
                     </a>
                     <Button variant="outline" size="lg" onClick={reset}>
-                      <RotateCcw className="h-4 w-4" />
-                      Novo vídeo
+                      <RotateCcw className="h-4 w-4" /> Novo vídeo
                     </Button>
                   </div>
                 </div>
@@ -432,11 +674,10 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-white/6 py-6">
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between">
-          <p className="text-xs text-white/25">VideoEditor IA — Fase 1</p>
-          <p className="text-xs text-white/25">OpenAI Whisper · FFmpeg · Next.js</p>
+          <p className="text-xs text-white/25">VideoEditor IA — Fase 3</p>
+          <p className="text-xs text-white/25">OpenAI Whisper · GPT-4 · FFmpeg · Next.js</p>
         </div>
       </footer>
     </div>

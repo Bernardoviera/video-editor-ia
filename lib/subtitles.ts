@@ -1,4 +1,5 @@
 import { writeFile } from 'fs/promises'
+import type { CaptionStyle } from './animationTypes'
 
 export interface Word {
   word: string
@@ -11,10 +12,20 @@ function toAssTime(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60)
   const s = Math.floor(seconds % 60)
   const cs = Math.round((seconds % 1) * 100)
-  return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`
+  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`
 }
 
-export async function generateAss(words: Word[], outputPath: string): Promise<void> {
+const STYLE_LINES: Record<CaptionStyle, string> = {
+  bold:   'Style: Default,Open Sans,82,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,5,0,2,30,30,120,1',
+  bounce: 'Style: Default,Open Sans,78,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,4,0,2,30,30,120,1',
+  clean:  'Style: Default,Inter,60,&H00FFFFFF,&H000000FF,&H00000000,&H40000000,0,0,0,0,100,100,0,0,1,2,2,2,30,30,140,1',
+}
+
+export async function generateAss(
+  words: Word[],
+  outputPath: string,
+  captionStyle: CaptionStyle = 'bounce'
+): Promise<void> {
   const GROUP = 5
   const lines: string[] = [
     '[Script Info]',
@@ -26,7 +37,7 @@ export async function generateAss(words: Word[], outputPath: string): Promise<vo
     '',
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
-    'Style: Default,Open Sans,78,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,4,0,2,30,30,120,1',
+    STYLE_LINES[captionStyle],
     '',
     '[Events]',
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
@@ -50,11 +61,13 @@ export async function generateAss(words: Word[], outputPath: string): Promise<vo
       }
       const end = toAssTime(endTime)
 
-      const text = group.map((w, idx) => {
-        const t = w.word.trim().toUpperCase()
-        if (idx === j) return `{\\c&H3E3EE5&}${t}{\\c&HFFFFFF&}`
-        return t
-      }).join(' ')
+      const text = group
+        .map((w, idx) => {
+          const t = w.word.trim().toUpperCase()
+          if (idx === j) return `{\\c&H3E3EE5&}${t}{\\c&HFFFFFF&}`
+          return t
+        })
+        .join(' ')
 
       lines.push(`Dialogue: 0,${start},${end},Default,,0,0,0,,${text}`)
     }
