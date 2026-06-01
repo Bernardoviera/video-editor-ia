@@ -205,7 +205,7 @@ export default function Home() {
           <div className="mb-10 text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00c4f0]/10 border border-[#00c4f0]/20 text-[#00c4f0] text-xs font-medium mb-6">
               <Sparkles className="h-3 w-3" />
-              Powered by OpenAI Whisper + Remotion
+              Powered by OpenAI Whisper + FFmpeg
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-white mb-3">
               Editor de Vídeo com IA
@@ -328,7 +328,7 @@ export default function Home() {
                     <div className="text-center">
                       <p className="text-sm font-medium text-white">Renderizando vídeo...</p>
                       <p className="text-xs text-white/40 mt-1">
-                        Composição com Remotion • {renderProgress}%
+                        Processando com FFmpeg • {renderProgress}%
                       </p>
                     </div>
                   </div>
@@ -377,7 +377,7 @@ export default function Home() {
       <footer className="border-t border-white/6 py-6">
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between">
           <p className="text-xs text-white/25">VideoEditor IA — Fase 1</p>
-          <p className="text-xs text-white/25">OpenAI Whisper · Remotion · Next.js</p>
+          <p className="text-xs text-white/25">OpenAI Whisper · FFmpeg · Next.js</p>
         </div>
       </footer>
     </div>
