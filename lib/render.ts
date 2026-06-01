@@ -1,6 +1,7 @@
 import { spawn } from 'child_process'
 import { mkdir, unlink } from 'fs/promises'
 import { existsSync } from 'fs'
+import { tmpdir } from 'os'
 import path from 'path'
 import ffmpegStatic from 'ffmpeg-static'
 import { generateAss, Word } from './subtitles'
@@ -22,8 +23,8 @@ export async function renderVideo(
   inputPath: string,
   words: Word[],
   timestamp: string
-): Promise<{ url: string }> {
-  const outputDir = path.join(process.cwd(), 'public', 'outputs')
+): Promise<{ filePath: string }> {
+  const outputDir  = tmpdir()
   const assFilename = `sub-${timestamp}.ass`
   const assPath     = path.join(outputDir, assFilename)
   const outPath     = path.join(outputDir, `output-${timestamp}.mp4`)
@@ -48,6 +49,5 @@ export async function renderVideo(
     await unlink(assPath).catch(() => {})
   }
 
-  return { url: `/outputs/output-${timestamp}.mp4` }
+  return { filePath: outPath }
 }
-

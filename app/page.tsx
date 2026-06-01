@@ -143,8 +143,15 @@ export default function Home() {
         throw new Error(data.error ?? "Erro ao renderizar.");
       }
 
-      const data = await res.json();
-      setDownloadUrl(data.url);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "video-legendado.mp4";
+      a.click();
+
+      setDownloadUrl(url);
       setStep("done");
     } catch (err) {
       clearInterval(interval);
@@ -154,6 +161,7 @@ export default function Home() {
   }, [videoFile, transcription, words, videoDimensions]);
 
   const reset = () => {
+    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
     setStep("idle");
     setVideoFile(null);
     setVideoDimensions({ width: 1080, height: 1920 });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink, mkdir } from "fs/promises";
+import { writeFile, unlink, mkdir, readFile } from "fs/promises";
 import path from "path";
 import os from "os";
 import { renderVideo } from "@/lib/render";
@@ -36,9 +36,17 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     await writeFile(tmpInput, Buffer.from(bytes));
 
-    const { url } = await renderVideo(tmpInput, words, timestamp);
+    const { filePath } = await renderVideo(tmpInput, words, timestamp);
 
-    return NextResponse.json({ url });
+    const buffer = await readFile(filePath);
+    await unlink(filePath).catch(() => {});
+
+    return new NextResponse(buffer, {
+      headers: {
+        "Content-Type": "video/mp4",
+        "Content-Disposition": 'attachment; filename="video-legendado.mp4"',
+      },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro ao renderizar.";
     console.error("[render]", err);
