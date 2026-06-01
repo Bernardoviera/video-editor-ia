@@ -5,9 +5,9 @@ import path from 'path'
 import ffmpegStatic from 'ffmpeg-static'
 import { generateAss, Word } from './subtitles'
 
-function runFFmpeg(args: string[]): Promise<void> {
+function runFFmpeg(args: string[], cwd?: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(ffmpegStatic ?? 'ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const proc = spawn(ffmpegStatic ?? 'ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'], cwd })
     let stderr = ''
     proc.stderr.on('data', (d: Buffer) => { stderr += d.toString() })
     proc.on('close', (code) => {
@@ -18,19 +18,15 @@ function runFFmpeg(args: string[]): Promise<void> {
   })
 }
 
-function escapeFilter(p: string): string {
-  return p.replace(/\\/g, '/').replace(/:/g, '\\:')
-}
-
 export async function renderVideo(
   inputPath: string,
   words: Word[],
   timestamp: string
 ): Promise<{ url: string }> {
   const outputDir = path.join(process.cwd(), 'public', 'outputs')
-  const assPath   = path.join(outputDir, `sub-${timestamp}.ass`)
-  const outPath   = path.join(outputDir, `output-${timestamp}.mp4`)
-  const fontsDir  = path.join(process.cwd(), 'public', 'fonts')
+  const assFilename = `sub-${timestamp}.ass`
+  const assPath     = path.join(outputDir, assFilename)
+  const outPath     = path.join(outputDir, `output-${timestamp}.mp4`)
 
   if (!existsSync(outputDir)) await mkdir(outputDir, { recursive: true })
 
@@ -40,14 +36,14 @@ export async function renderVideo(
     await runFFmpeg([
       '-y',
       '-i', inputPath,
-      '-vf', `ass=f=${escapeFilter(assPath)}`,
+      '-vf', `ass=${assFilename}`,
       '-c:v', 'libx264',
       '-preset', 'fast',
       '-crf', '23',
       '-c:a', 'aac',
       '-b:a', '128k',
       outPath,
-    ])
+    ], outputDir)
   } finally {
     await unlink(assPath).catch(() => {})
   }
