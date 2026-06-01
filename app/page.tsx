@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   Sparkles,
   Download,
@@ -56,6 +56,13 @@ export default function Home() {
   const [renderProgress, setRenderProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   const handleUpload = useCallback(async (file: File) => {
     setVideoFile(file);
@@ -120,11 +127,6 @@ export default function Home() {
     setStep("rendering");
     setRenderProgress(0);
 
-    // Simulate progress UI while rendering
-    const interval = setInterval(() => {
-      setRenderProgress((p) => Math.min(p + 2, 90));
-    }, 600);
-
     try {
       const fd = new FormData();
       fd.append("video", videoFile);
@@ -134,33 +136,68 @@ export default function Home() {
       fd.append("height", String(videoDimensions.height));
 
       const res = await fetch("/api/render", { method: "POST", body: fd });
-
-      clearInterval(interval);
-      setRenderProgress(100);
-
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error ?? "Erro ao renderizar.");
+        throw new Error(data.error ?? "Erro ao iniciar render.");
       }
+      const { jobId } = await res.json();
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      pollingRef.current = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/render/status?jobId=${jobId}`);
+          const { status, error } = await statusRes.json();
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "video-legendado.mp4";
-      a.click();
+          if (status === "processing") {
+            setRenderProgress((p) => Math.min(p + 3, 90));
+            return;
+          }
 
-      setDownloadUrl(url);
-      setStep("done");
+          clearInterval(pollingRef.current!);
+          pollingRef.current = null;
+
+          if (status === "error") {
+            setErrorMsg(error ?? "Erro ao renderizar.");
+            setStep("error");
+            return;
+          }
+
+          // status === "done"
+          setRenderProgress(100);
+
+          const dlRes = await fetch(`/api/render/download?jobId=${jobId}`);
+          if (!dlRes.ok) throw new Error("Erro ao baixar o vídeo.");
+
+          const blob = await dlRes.blob();
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "video-legendado.mp4";
+          a.click();
+
+          setDownloadUrl(url);
+          setStep("done");
+        } catch (pollErr) {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          setErrorMsg(pollErr instanceof Error ? pollErr.message : "Erro desconhecido.");
+          setStep("error");
+        }
+      }, 2000);
+
     } catch (err) {
-      clearInterval(interval);
       setErrorMsg(err instanceof Error ? err.message : "Erro desconhecido.");
       setStep("error");
     }
   }, [videoFile, transcription, words, videoDimensions]);
 
   const reset = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
     if (downloadUrl) URL.revokeObjectURL(downloadUrl);
     setStep("idle");
     setVideoFile(null);

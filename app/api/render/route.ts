@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink, mkdir, readFile } from "fs/promises";
+import { writeFile, unlink, mkdir } from "fs/promises";
 import path from "path";
 import os from "os";
 import { renderVideo } from "@/lib/render";
 import { TranscriptionWord } from "@/lib/whisper";
+import { jobs, cleanupOldJobs } from "@/lib/jobStore";
 
 export const maxDuration = 300;
 
@@ -24,6 +25,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Words inválidos." }, { status: 400 });
   }
 
+  cleanupOldJobs();
+
+  const jobId = crypto.randomUUID();
   const timestamp = Date.now().toString();
   const tmpDir = path.join(os.tmpdir(), "video-editor-ia");
   await mkdir(tmpDir, { recursive: true });
@@ -35,23 +39,26 @@ export async function POST(req: NextRequest) {
   try {
     const bytes = await file.arrayBuffer();
     await writeFile(tmpInput, Buffer.from(bytes));
-
-    const { filePath } = await renderVideo(tmpInput, words, timestamp);
-
-    const buffer = await readFile(filePath);
-    await unlink(filePath).catch(() => {});
-
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": "video/mp4",
-        "Content-Disposition": 'attachment; filename="video-legendado.mp4"',
-      },
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao renderizar.";
-    console.error("[render]", err);
-    return NextResponse.json({ error: message }, { status: 500 });
-  } finally {
-    unlink(tmpInput).catch(() => null);
+  } catch {
+    return NextResponse.json({ error: "Erro ao salvar arquivo." }, { status: 500 });
   }
+
+  jobs.set(jobId, { status: "processing", createdAt: Date.now() });
+
+  renderVideo(tmpInput, words, timestamp)
+    .then(({ filePath }) => {
+      jobs.set(jobId, { status: "done", filePath, createdAt: Date.now() });
+    })
+    .catch((err) => {
+      jobs.set(jobId, {
+        status: "error",
+        error: err instanceof Error ? err.message : "Erro desconhecido.",
+        createdAt: Date.now(),
+      });
+    })
+    .finally(() => {
+      unlink(tmpInput).catch(() => null);
+    });
+
+  return NextResponse.json({ jobId });
 }
