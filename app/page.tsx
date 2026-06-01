@@ -56,6 +56,8 @@ export default function Home() {
   const [renderProgress, setRenderProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [removeSilencesEnabled, setRemoveSilencesEnabled] = useState(true);
+  const [transcribeMsg, setTranscribeMsg] = useState("Transcrevendo com Whisper...");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -70,9 +72,18 @@ export default function Home() {
     setErrorMsg(null);
     getVideoDimensions(file).then(setVideoDimensions);
 
+    let phaseTimer: ReturnType<typeof setTimeout> | null = null;
+    if (removeSilencesEnabled) {
+      setTranscribeMsg("Removendo silêncios...");
+      phaseTimer = setTimeout(() => setTranscribeMsg("Transcrevendo áudio..."), 8000);
+    } else {
+      setTranscribeMsg("Transcrevendo com Whisper...");
+    }
+
     try {
       const fd = new FormData();
       fd.append("video", file);
+      fd.append("removeSilences", removeSilencesEnabled ? "true" : "false");
 
       const res = await fetch("/api/transcribe", { method: "POST", body: fd });
       const data = await res.json();
@@ -86,8 +97,10 @@ export default function Home() {
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erro desconhecido.");
       setStep("error");
+    } finally {
+      if (phaseTimer) clearTimeout(phaseTimer);
     }
-  }, []);
+  }, [removeSilencesEnabled]);
 
   const handleSegmentsChange = useCallback(
     (updatedSegments: TranscriptionSegment[]) => {
@@ -263,6 +276,15 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <VideoUpload onUpload={handleUpload} />
+                <label className="flex items-center gap-2.5 mt-4 cursor-pointer select-none w-fit">
+                  <input
+                    type="checkbox"
+                    checked={removeSilencesEnabled}
+                    onChange={(e) => setRemoveSilencesEnabled(e.target.checked)}
+                    className="w-4 h-4 accent-[#00c4f0] rounded"
+                  />
+                  <span className="text-sm text-white/50">Remover silêncios automaticamente</span>
+                </label>
                 {step === "error" && errorMsg && (
                   <div className="flex items-start gap-2 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
                     <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
@@ -288,7 +310,7 @@ export default function Home() {
                     <div className="absolute inset-0 rounded-full border-2 border-[#00c4f0]/20 animate-ping" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium text-white">Transcrevendo com Whisper...</p>
+                    <p className="text-sm font-medium text-white">{transcribeMsg}</p>
                     <p className="text-xs text-white/40 mt-1">
                       {videoFile?.name} • Isso pode levar alguns segundos
                     </p>
