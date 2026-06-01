@@ -34,16 +34,30 @@ export async function generateAss(words: Word[], outputPath: string): Promise<vo
 
   for (let i = 0; i < words.length; i += GROUP) {
     const group = words.slice(i, i + GROUP)
-    const start = toAssTime(group[0].start)
-    const end   = toAssTime(group[group.length - 1].end)
+    const nextGroupFirstStart = i + GROUP < words.length ? words[i + GROUP].start : null
 
-    const text = group.map((w, idx) => {
-      const t = w.word.trim().toUpperCase()
-      if (idx === group.length - 1) return `{\\c&H3E3EE5&}${t}{\\c&HFFFFFF&}`
-      return t
-    }).join(' ')
+    for (let j = 0; j < group.length; j++) {
+      const word = group[j]
+      const start = toAssTime(word.start)
 
-    lines.push(`Dialogue: 0,${start},${end},Default,,0,0,0,,${text}`)
+      let endTime: number
+      if (j < group.length - 1) {
+        endTime = group[j + 1].start
+      } else if (nextGroupFirstStart !== null) {
+        endTime = nextGroupFirstStart
+      } else {
+        endTime = word.end + 0.5
+      }
+      const end = toAssTime(endTime)
+
+      const text = group.map((w, idx) => {
+        const t = w.word.trim().toUpperCase()
+        if (idx === j) return `{\\c&H3E3EE5&}${t}{\\c&HFFFFFF&}`
+        return t
+      }).join(' ')
+
+      lines.push(`Dialogue: 0,${start},${end},Default,,0,0,0,,${text}`)
+    }
   }
 
   await writeFile(outputPath, lines.join('\n'), 'utf-8')
