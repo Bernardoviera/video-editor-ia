@@ -22,7 +22,8 @@ function RemotionRoot() {
         height={720}
         defaultProps={{
           videoSrc: "",
-          segments: defaultSegments,
+          words: [],
+          events: [],
         }}
       />
       <Composition

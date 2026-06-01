@@ -4,15 +4,23 @@ import { useMemo, useState } from "react";
 import { Player } from "@remotion/player";
 import { SubtitleComposition } from "@/remotion/SubtitleComposition";
 import { TranscriptionWord } from "@/lib/whisper";
+import type { AnimationEvent } from "@/lib/animationTypes";
 
 interface VideoPreviewProps {
   videoFile: File;
   words: TranscriptionWord[];
   duration: number;
   videoDimensions: { width: number; height: number };
+  events?: AnimationEvent[];
 }
 
-export function VideoPreview({ videoFile, words, duration, videoDimensions }: VideoPreviewProps) {
+export function VideoPreview({
+  videoFile,
+  words,
+  duration,
+  videoDimensions,
+  events = [],
+}: VideoPreviewProps) {
   const [objectUrl] = useState(() => URL.createObjectURL(videoFile));
   const { width, height } = videoDimensions;
 
@@ -21,8 +29,8 @@ export function VideoPreview({ videoFile, words, duration, videoDimensions }: Vi
   const aspectRatio = `${width}/${height}`;
 
   const inputProps = useMemo(
-    () => ({ videoSrc: objectUrl, words }),
-    [objectUrl, words]
+    () => ({ videoSrc: objectUrl, words, events }),
+    [objectUrl, words, events]
   );
 
   return (

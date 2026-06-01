@@ -14,6 +14,8 @@ import {
 import { fitTextOnNLines } from "@remotion/layout-utils";
 import { createTikTokStyleCaptions, type Caption, type TikTokPage } from "@remotion/captions";
 import { TranscriptionWord } from "../lib/whisper";
+import { AnimationOverlay } from "./AnimationOverlay";
+import type { AnimationEvent } from "../lib/animationTypes";
 
 const FONT_FAMILY = "Inter";
 const fontFamily = FONT_FAMILY;
@@ -21,13 +23,14 @@ const fontFamily = FONT_FAMILY;
 interface Props {
   videoSrc: string;
   words: TranscriptionWord[];
+  events?: AnimationEvent[];
 }
 
 const HIGHLIGHT = "#E53E3E";
 const TEXT_SHADOW =
   "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000";
 const MAX_FONT_SIZE = 38;
-const MAX_BOX_WIDTH = 1200; // 1280 - 40 padding each side
+const MAX_BOX_WIDTH = 1200;
 
 function wordsToCaptions(words: TranscriptionWord[]): Caption[] {
   return words.map((w, i) => ({
@@ -54,9 +57,8 @@ function SubtitleOverlay({
   const { fps } = useVideoConfig();
   const currentTimeMs = (frame / fps) * 1000;
 
-  const activePage = pages.find(
-    (p) => currentTimeMs >= p.startMs && currentTimeMs < p.startMs + p.durationMs
-  ) ?? null;
+  const activePage =
+    pages.find((p) => currentTimeMs >= p.startMs && currentTimeMs < p.startMs + p.durationMs) ?? null;
 
   if (!activePage) return null;
 
@@ -64,7 +66,6 @@ function SubtitleOverlay({
     (t) => currentTimeMs >= t.fromMs && currentTimeMs < t.toMs
   );
 
-  // Dynamic font sizing from reference: fit page text into 2 lines within box width
   let fontSize = MAX_FONT_SIZE;
   if (fontsLoaded) {
     try {
@@ -78,7 +79,7 @@ function SubtitleOverlay({
       });
       fontSize = result.fontSize;
     } catch {
-      // Font not ready yet — use max
+      // Font not ready yet
     }
   }
 
@@ -104,10 +105,7 @@ function SubtitleOverlay({
       }}
     >
       {activePage.tokens.map((token, i) => (
-        <span
-          key={i}
-          style={{ color: i === activeTokenIdx ? HIGHLIGHT : "#ffffff" }}
-        >
+        <span key={i} style={{ color: i === activeTokenIdx ? HIGHLIGHT : "#ffffff" }}>
           {token.text}
         </span>
       ))}
@@ -115,7 +113,7 @@ function SubtitleOverlay({
   );
 }
 
-export const SubtitleComposition: React.FC<Props> = ({ videoSrc, words }) => {
+export const SubtitleComposition: React.FC<Props> = ({ videoSrc, words, events = [] }) => {
   const { width, height } = useVideoConfig();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [handle] = useState(() => delayRender("Loading Inter font"));
@@ -154,6 +152,9 @@ export const SubtitleComposition: React.FC<Props> = ({ videoSrc, words }) => {
         videoHeight={height}
         fontsLoaded={fontsLoaded}
       />
+      {events.length > 0 && (
+        <AnimationOverlay events={events} width={width} height={height} />
+      )}
     </AbsoluteFill>
   );
 };
