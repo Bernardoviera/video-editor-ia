@@ -40,7 +40,7 @@ export async function renderVideo(
     await runFFmpeg([
       '-y',
       '-i', inputPath,
-      '-vf', `ass=${escapeFilter(assPath)}:fontsdir=${escapeFilter(fontsDir)}`,
+      '-vf', `ass=f=${escapeFilter(assPath)}`,
       '-c:v', 'libx264',
       '-preset', 'fast',
       '-crf', '23',
