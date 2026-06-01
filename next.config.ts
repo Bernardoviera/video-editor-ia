@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     "@remotion/bundler",
     "@rspack/core",
     "@rspack/binding",
+    "ffmpeg-static",
   ],
   experimental: {
     serverActions: {
