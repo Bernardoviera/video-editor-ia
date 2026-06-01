@@ -1,106 +1,56 @@
-import path from "path";
-import os from "os";
-import fs from "fs";
-import { TranscriptionWord } from "./whisper";
+import { spawn } from 'child_process'
+import { mkdir, unlink } from 'fs/promises'
+import { existsSync } from 'fs'
+import path from 'path'
+import { generateAss, Word } from './subtitles'
 
-export function getBaseUrl(): string {
-  const port = process.env.PORT ?? 3000;
-  return process.env.RAILWAY_PUBLIC_DOMAIN
-    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-    : `http://localhost:${port}`;
+function runFFmpeg(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn('ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    let stderr = ''
+    proc.stderr.on('data', (d: Buffer) => { stderr += d.toString() })
+    proc.on('close', (code) => {
+      if (code === 0) resolve()
+      else reject(new Error(`FFmpeg saiu com código ${code}:\n${stderr.slice(-800)}`))
+    })
+    proc.on('error', reject)
+  })
 }
 
-export interface RenderOptions {
-  videoPath: string;
-  words: TranscriptionWord[];
-  duration: number;
-  width?: number;
-  height?: number;
-  outputPath?: string;
+function escapeFilter(p: string): string {
+  return p.replace(/\\/g, '/').replace(/:/g, '\\:')
 }
 
-export async function renderVideoWithSubtitles(options: RenderOptions): Promise<string> {
-  const { bundle } = await import("@remotion/bundler");
-  const { renderMedia, selectComposition, ensureBrowser } = await import("@remotion/renderer");
+export async function renderVideo(
+  inputPath: string,
+  words: Word[],
+  timestamp: string
+): Promise<{ url: string }> {
+  const outputDir = path.join(process.cwd(), 'public', 'outputs')
+  const assPath   = path.join(outputDir, `sub-${timestamp}.ass`)
+  const outPath   = path.join(outputDir, `output-${timestamp}.mp4`)
+  const fontsDir  = path.join(process.cwd(), 'public', 'fonts')
 
-  const outputPath = options.outputPath ?? path.join(os.tmpdir(), `output-${Date.now()}.mp4`);
-  const entryPoint = path.join(process.cwd(), "remotion", "index.tsx");
-  const fps = 15;
-  const durationInFrames = Math.ceil(options.duration * fps) + fps;
+  if (!existsSync(outputDir)) await mkdir(outputDir, { recursive: true })
 
-  const inputProps = {
-    videoSrc: options.videoPath,
-    words: options.words,
-  };
+  await generateAss(words, assPath)
 
-  console.log("[render] Ensuring browser...");
-  await ensureBrowser();
-
-  console.log("[render] Bundling entry point...");
-  const bundleLocation = await bundle({
-    entryPoint,
-    webpackOverride: (config) => ({
-      ...config,
-      module: {
-        ...config.module,
-        rules: [
-          ...(config.module?.rules ?? []),
-          { test: /\.md$/, use: "null-loader" },
-        ],
-      },
-    }),
-  });
-  console.log("[render] Bundle done:", bundleLocation);
-
-  console.log("[render] Selecting composition...");
-  const composition = await selectComposition({
-    serveUrl: bundleLocation,
-    id: "SubtitleVideo",
-    inputProps,
-  });
-  console.log("[render] Composition selected. Frames:", durationInFrames);
-
-  console.log("[render] Starting renderMedia...");
-  await renderMedia({
-    composition: {
-      ...composition,
-      durationInFrames,
-      fps,
-      width: options.width ?? 1080,
-      height: options.height ?? 1920,
-    },
-    serveUrl: bundleLocation,
-    codec: "h264",
-    outputLocation: outputPath,
-    inputProps,
-    timeoutInMilliseconds: 120000,
-    concurrency: 1,
-    disallowParallelEncoding: true,
-    chromiumOptions: {
-      disableWebSecurity: true,
-      gl: "swiftshader",
-    },
-    onProgress: ({ renderedFrames, encodedFrames, encodedDoneIn, renderedDoneIn, stitchStage }) => {
-      console.log(
-        `[render] rendered=${renderedFrames}/${durationInFrames}` +
-        ` encoded=${encodedFrames}` +
-        ` stage=${stitchStage ?? "-"}` +
-        ` renderedDoneIn=${renderedDoneIn ?? "-"}ms` +
-        ` encodedDoneIn=${encodedDoneIn ?? "-"}ms`
-      );
-    },
-  });
-
-  console.log("[render] renderMedia complete. Output:", outputPath);
-  return outputPath;
-}
-
-export function cleanupFile(filePath: string) {
   try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-  } catch {
-    // ignore cleanup errors
+    await runFFmpeg([
+      '-y',
+      '-i', inputPath,
+      '-vf', `ass=${escapeFilter(assPath)}:fontsdir=${escapeFilter(fontsDir)}`,
+      '-c:v', 'libx264',
+      '-preset', 'fast',
+      '-crf', '23',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      outPath,
+    ])
+  } finally {
+    await unlink(assPath).catch(() => {})
   }
+
+  return { url: `/outputs/output-${timestamp}.mp4` }
 }
+
