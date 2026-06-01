@@ -2,11 +2,12 @@ import { spawn } from 'child_process'
 import { mkdir, unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import ffmpegStatic from 'ffmpeg-static'
 import { generateAss, Word } from './subtitles'
 
 function runFFmpeg(args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    const proc = spawn('ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const proc = spawn(ffmpegStatic ?? 'ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] })
     let stderr = ''
     proc.stderr.on('data', (d: Buffer) => { stderr += d.toString() })
     proc.on('close', (code) => {
