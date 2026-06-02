@@ -1,5 +1,5 @@
 import { writeFile } from 'fs/promises'
-import type { CaptionStyle } from './animationTypes'
+import type { AnimationEvent, CaptionStyle } from './animationTypes'
 
 export interface Word {
   word: string
@@ -39,7 +39,8 @@ const STYLE_LINES: Record<CaptionStyle, string> = {
 export async function generateAss(
   words: Word[],
   outputPath: string,
-  captionStyle: CaptionStyle = 'bounce'
+  captionStyle: CaptionStyle = 'bounce',
+  animations: AnimationEvent[] = []
 ): Promise<void> {
   const GROUP = 5
   const activeColour = ACTIVE_COLOUR[captionStyle]
@@ -77,6 +78,12 @@ export async function generateAss(
         endTime = word.end + 0.5
       }
       const end = toAssTime(endTime)
+
+      // Skip this line if it overlaps with any active animation
+      const overlaps = animations.some(
+        (a) => word.start < a.startTime + a.duration && endTime > a.startTime
+      )
+      if (overlaps) continue
 
       const text = group
         .map((w, idx) => {

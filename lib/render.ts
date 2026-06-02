@@ -109,7 +109,7 @@ export async function renderVideo(options: RenderOptions): Promise<{ filePath: s
 
   if (!existsSync(outputDir)) await mkdir(outputDir, { recursive: true })
 
-  await generateAss(words, assPath, captionStyle)
+  await generateAss(words, assPath, captionStyle, animationEvents)
 
   const effectiveDuration =
     duration ??
