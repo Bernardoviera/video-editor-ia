@@ -4,6 +4,7 @@ import type { AnimationEvent, TemplateName, TemplateProps } from '../lib/animati
 import {
   DarkReveal, ImpactTitle, GlitchReveal, WordPop, SlideIn,
   BlurTitle, TrackingReveal, ShimmerText, LiquidFill, FloatCard,
+  ChromaticTransition, FrostedTransition, TextStack,
 } from './templates'
 
 interface Props {
@@ -14,17 +15,20 @@ interface Props {
 
 function TemplateSwitch({ template, props }: { template: TemplateName; props: TemplateProps }) {
   switch (template) {
-    case 'DarkReveal':     return <DarkReveal     {...props} />
-    case 'ImpactTitle':    return <ImpactTitle     {...props} />
-    case 'GlitchReveal':   return <GlitchReveal    {...props} />
-    case 'WordPop':        return <WordPop          {...props} />
-    case 'SlideIn':        return <SlideIn          {...props} />
-    case 'BlurTitle':      return <BlurTitle        {...props} />
-    case 'TrackingReveal': return <TrackingReveal   {...props} />
-    case 'ShimmerText':    return <ShimmerText      {...props} />
-    case 'LiquidFill':     return <LiquidFill       {...props} />
-    case 'FloatCard':      return <FloatCard         {...props} />
-    default:               return null
+    case 'DarkReveal':          return <DarkReveal          {...props} />
+    case 'ImpactTitle':         return <ImpactTitle          {...props} />
+    case 'GlitchReveal':        return <GlitchReveal         {...props} />
+    case 'WordPop':             return <WordPop              {...props} />
+    case 'SlideIn':             return <SlideIn              {...props} />
+    case 'BlurTitle':           return <BlurTitle            {...props} />
+    case 'TrackingReveal':      return <TrackingReveal       {...props} />
+    case 'ShimmerText':         return <ShimmerText          {...props} />
+    case 'LiquidFill':          return <LiquidFill           {...props} />
+    case 'FloatCard':           return <FloatCard            {...props} />
+    case 'ChromaticTransition': return <ChromaticTransition  {...props} />
+    case 'FrostedTransition':   return <FrostedTransition    {...props} />
+    case 'TextStack':           return <TextStack            {...props} />
+    default:                    return null
   }
 }
 
@@ -34,7 +38,7 @@ export const AnimationOverlay: React.FC<Props> = ({ events }) => {
   return (
     <AbsoluteFill style={{ background: 'transparent' }}>
       {events.map((event) => {
-        const startFrame    = Math.round(event.startTime * fps)
+        const startFrame     = Math.round(event.startTime * fps)
         const durationFrames = Math.max(1, Math.round(event.duration * fps))
 
         return (

@@ -1,89 +1,61 @@
-import React from 'react'
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion'
-import type { TemplateProps } from '../../lib/animationTypes'
+// Uses: CardExpansionMask (motionforge) + KineticTypography type="reveal" (motionforge)
+import React from "react";
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { CardExpansionMask } from "../components/motionforge/CardExpansionMask";
+import { KineticTypography } from "../components/motionforge/KineticTypography";
+import type { TemplateProps } from "../../lib/animationTypes";
 
-export function DarkReveal({ text = 'IMPACTO', accentColor = '#00c4f0' }: TemplateProps) {
-  const frame = useCurrentFrame()
-  const { fps, durationInFrames } = useVideoConfig()
+export function DarkReveal({ text = "IMPACTO", accentColor = "#00c4f0" }: TemplateProps) {
+  const frame = useCurrentFrame();
+  const { durationInFrames, fps } = useVideoConfig();
 
-  // 1. Dark overlay fades in
-  const overlayOpacity = interpolate(frame, [0, 8], [0, 0.82], { extrapolateRight: 'clamp' })
+  const overlayOp = interpolate(frame, [0, 8], [0, 0.82], { extrapolateRight: "clamp" });
+  const fadeOut   = interpolate(frame, [durationInFrames - 8, durationInFrames], [0, 1], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp",
+  });
 
-  // 2. Circle clip-path expands via spring
-  const circleSpring = spring({ frame, fps, config: { damping: 20, stiffness: 100, mass: 1 } })
-  const circleRadius = interpolate(circleSpring, [0, 1], [0, 140])
-
-  // 3. Text scale + opacity via spring (delayed)
-  const textSpring = spring({ frame: Math.max(0, frame - 8), fps, config: { damping: 14, stiffness: 180 } })
-  const textScale   = interpolate(textSpring, [0, 1], [0.75, 1])
-  const textOpacity = interpolate(textSpring, [0, 1], [0, 1])
-
-  // 4. Fade out near end
-  const fadeOut = interpolate(frame, [durationInFrames - 8, durationInFrames], [0, 1], {
-    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
-  })
-  const globalOpacity = 1 - fadeOut
+  // accent line grows inside the reveal
+  const lineWidth = interpolate(frame, [10, 30], [0, 160], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
-    <AbsoluteFill style={{ opacity: globalOpacity }}>
+    <AbsoluteFill style={{ opacity: 1 - fadeOut }}>
       {/* Dark overlay */}
-      <AbsoluteFill style={{ background: `rgba(0,0,0,${overlayOpacity})` }} />
+      <AbsoluteFill style={{ background: `rgba(0,0,0,${overlayOp})` }} />
 
-      {/* Circle reveal with clip-path */}
-      <AbsoluteFill
-        style={{
-          clipPath: `circle(${circleRadius}% at 50% 50%)`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {/* Inner glow */}
-        <div
+      {/* Circle expand reveal via CardExpansionMask */}
+      <CardExpansionMask durationInFrames={Math.floor(durationInFrames * 0.6)} centerX={50} centerY={50}>
+        <AbsoluteFill
           style={{
-            position: 'absolute',
-            width: '60%',
-            height: '60%',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${accentColor}18 0%, transparent 70%)`,
-          }}
-        />
-
-        {/* Text */}
-        <div
-          style={{
-            transform: `scale(${textScale})`,
-            opacity: textOpacity,
-            textAlign: 'center',
-            padding: '0 60px',
+            background: `radial-gradient(circle at 50% 50%, ${accentColor}14 0%, transparent 65%)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexDirection: "column", gap: 16, padding: "0 60px",
           }}
         >
-          <div
+          {/* KineticTypography type="reveal" */}
+          <KineticTypography
+            text={(text ?? "IMPACTO").toUpperCase()}
+            type="reveal"
+            durationInFrames={Math.floor(durationInFrames * 0.5)}
+            stagger={2}
+            fontSize={82}
+            fontWeight={900}
+            color="#ffffff"
             style={{
-              color: '#ffffff',
-              fontSize: 80,
-              fontFamily: 'Open Sans, sans-serif',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '-1px',
-              lineHeight: 1.1,
+              justifyContent: "center",
               textShadow: `0 0 40px ${accentColor}88, 0 4px 0 rgba(0,0,0,0.8)`,
+              letterSpacing: "-1px",
             }}
-          >
-            {text}
-          </div>
+          />
           {/* Accent line */}
           <div
             style={{
-              margin: '16px auto 0',
-              height: 4,
-              width: `${interpolate(textSpring, [0, 1], [0, 120])}px`,
-              background: accentColor,
-              borderRadius: 2,
+              height: 4, width: lineWidth,
+              background: accentColor, borderRadius: 2,
+              boxShadow: `0 0 12px ${accentColor}`,
             }}
           />
-        </div>
-      </AbsoluteFill>
+        </AbsoluteFill>
+      </CardExpansionMask>
     </AbsoluteFill>
-  )
+  );
 }

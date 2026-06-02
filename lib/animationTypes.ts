@@ -18,6 +18,9 @@ export type TemplateName =
   | 'ShimmerText'
   | 'LiquidFill'
   | 'FloatCard'
+  | 'ChromaticTransition'
+  | 'FrostedTransition'
+  | 'TextStack'
 
 export interface TemplateProps {
   // shared
@@ -139,5 +142,26 @@ export const TEMPLATE_CATALOG: TemplateInfo[] = [
     icon: '🃏',
     desc: 'Card flutua com informação de destaque',
     defaultProps: { title: 'DICA', body: 'Conteúdo aqui', cardPosition: 'bottom-right', accentColor: '#00c4f0' },
+  },
+  {
+    name: 'ChromaticTransition',
+    label: 'Chromatic Wipe',
+    icon: '🌈',
+    desc: 'Transição sci-fi com split de cores RGB (remocn)',
+    defaultProps: { text: 'PRÓXIMO', direction: 'left', accentColor: '#00c4f0' },
+  },
+  {
+    name: 'FrostedTransition',
+    label: 'Frosted Wipe',
+    icon: '🧊',
+    desc: 'Transição com vidro fosco deslizando (remocn)',
+    defaultProps: { text: 'PRÓXIMO', accentColor: '#00c4f0' },
+  },
+  {
+    name: 'TextStack',
+    label: 'Text Stack 3D',
+    icon: '📐',
+    desc: 'Texto com camadas 3D e perspectiva (motionforge)',
+    defaultProps: { text: 'IMPACT', accentColor: '#00c4f0' },
   },
 ]
