@@ -35,10 +35,11 @@ import {
 } from "@/lib/whisper";
 import type {
   AnimationEvent,
-  AnimationType,
   CaptionStyle,
-  Position,
+  TemplateName,
+  TemplateProps,
 } from "@/lib/animationTypes";
+import { TEMPLATE_CATALOG } from "@/lib/animationTypes";
 
 const VideoPreview = dynamic(
   () => import("@/components/VideoPreview").then((m) => m.VideoPreview),
@@ -58,13 +59,9 @@ type Step =
   | "done"
   | "error";
 
-const EVENT_LABELS: Record<AnimationType, string> = {
-  dark_overlay:  "🎬 Dark Overlay",
-  text_zoom:     "💥 Text Zoom",
-  emoji_pop:     "😎 Emoji Pop",
-  highlight_box: "📦 Highlight Box",
-  caption_style: "✏️ Caption Style",
-};
+const TEMPLATE_LABEL: Record<TemplateName, string> = Object.fromEntries(
+  TEMPLATE_CATALOG.map((t) => [t.name, `${t.icon} ${t.label}`])
+) as Record<TemplateName, string>;
 
 const CAPTION_STYLES: { key: CaptionStyle; label: string; desc: string }[] = [
   { key: "bold",   label: "BOLD",   desc: "ALL CAPS, outline pesado" },
@@ -119,10 +116,10 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing]         = useState(false);
   const [analyzeError, setAnalyzeError]       = useState<string | null>(null);
   const [showAddForm, setShowAddForm]         = useState(false);
-  const [newEvent, setNewEvent]               = useState<Partial<AnimationEvent>>({
-    type: "emoji_pop", position: "center", intensity: "medium",
-    duration: 2, startTime: 0, content: {},
-  });
+  const [newTemplate, setNewTemplate]         = useState<TemplateName>("DarkReveal");
+  const [newStartTime, setNewStartTime]       = useState(0);
+  const [newDuration, setNewDuration]         = useState(2);
+  const [newProps, setNewProps]               = useState<TemplateProps>({});
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -212,20 +209,19 @@ export default function Home() {
     setAnimationEvents((p) => p.map((e) => (e.id === id ? { ...e, ...patch } : e)));
 
   const addEvent = () => {
+    const defaultProps = TEMPLATE_CATALOG.find((t) => t.name === newTemplate)?.defaultProps ?? {};
     const event: AnimationEvent = {
       id:        `manual-${Date.now()}`,
-      type:      (newEvent.type ?? "emoji_pop") as AnimationType,
-      startTime: newEvent.startTime ?? 0,
-      duration:  newEvent.duration  ?? 2,
-      content:   newEvent.content   ?? {},
-      position:  (newEvent.position ?? "center") as Position,
-      intensity: (newEvent.intensity ?? "medium") as "low" | "medium" | "high",
+      template:  newTemplate,
+      startTime: newStartTime,
+      duration:  newDuration,
+      props:     { ...defaultProps, ...newProps },
     };
     setAnimationEvents((p) =>
       [...p, event].sort((a, b) => a.startTime - b.startTime)
     );
     setShowAddForm(false);
-    setNewEvent({ type: "emoji_pop", position: "center", intensity: "medium", duration: 2, startTime: 0, content: {} });
+    setNewProps({});
   };
 
   // ── render ───────────────────────────────────────────────────────────────────
@@ -300,6 +296,7 @@ export default function Home() {
     setRenderProgress(0); setDownloadUrl(null); setErrorMsg(null);
     setAnimationEvents([]); setIsAnalyzing(false); setAnalyzeError(null);
     setUserPrompt(""); setShowAddForm(false);
+    setNewTemplate("DarkReveal"); setNewStartTime(0); setNewDuration(2); setNewProps({});
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -534,36 +531,22 @@ export default function Home() {
                         <div className="flex-1 min-w-0 space-y-1.5">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-medium text-white">
-                              {EVENT_LABELS[event.type]}
+                              {TEMPLATE_LABEL[event.template]}
                             </span>
                             <span className="text-[10px] text-white/40">
                               {fmtTime(event.startTime)} → {fmtTime(event.startTime + event.duration)}
                             </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <input
-                              type="text"
-                              value={event.content.text ?? ""}
-                              onChange={(e) =>
-                                updateEvent(event.id, {
-                                  content: { ...event.content, text: e.target.value },
-                                })
-                              }
-                              placeholder="Texto"
-                              className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none focus:border-[#00c4f0]/50"
-                            />
-                            <input
-                              type="text"
-                              value={event.content.emoji ?? ""}
-                              onChange={(e) =>
-                                updateEvent(event.id, {
-                                  content: { ...event.content, emoji: e.target.value },
-                                })
-                              }
-                              placeholder="Emoji"
-                              className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none focus:border-[#00c4f0]/50"
-                            />
-                          </div>
+                          {/* Text prop */}
+                          <input
+                            type="text"
+                            value={event.props.text ?? ""}
+                            onChange={(e) =>
+                              updateEvent(event.id, { props: { ...event.props, text: e.target.value } })
+                            }
+                            placeholder="Texto principal"
+                            className="w-full px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none focus:border-[#00c4f0]/50"
+                          />
                           <div className="flex items-center gap-2 text-[10px] text-white/40">
                             <label>Início</label>
                             <input
@@ -579,9 +562,9 @@ export default function Home() {
                             <input
                               type="number"
                               value={event.duration}
-                              step={0.5} min={0.5} max={10}
+                              step={0.5} min={1.5} max={4}
                               onChange={(e) =>
-                                updateEvent(event.id, { duration: parseFloat(e.target.value) || 1 })
+                                updateEvent(event.id, { duration: parseFloat(e.target.value) || 2 })
                               }
                               className="w-14 px-1.5 py-0.5 rounded-md bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
                             />
@@ -602,49 +585,38 @@ export default function Home() {
                         <p className="text-xs font-medium text-white">Nova animação</p>
                         <div className="grid grid-cols-2 gap-1.5">
                           <select
-                            value={newEvent.type}
-                            onChange={(e) =>
-                              setNewEvent((p) => ({ ...p, type: e.target.value as AnimationType }))
-                            }
+                            value={newTemplate}
+                            onChange={(e) => {
+                              const t = e.target.value as TemplateName
+                              setNewTemplate(t)
+                              setNewProps(TEMPLATE_CATALOG.find((c) => c.name === t)?.defaultProps ?? {})
+                            }}
                             className="px-2 py-1.5 rounded-lg bg-[#0d0d12] border border-white/10 text-xs text-white focus:outline-none col-span-2"
                           >
-                            {(Object.keys(EVENT_LABELS) as AnimationType[]).map((t) => (
-                              <option key={t} value={t}>{EVENT_LABELS[t]}</option>
+                            {TEMPLATE_CATALOG.map((t) => (
+                              <option key={t.name} value={t.name}>{t.icon} {t.label} — {t.desc}</option>
                             ))}
                           </select>
                           <input
                             type="text"
-                            placeholder="Texto"
-                            onChange={(e) =>
-                              setNewEvent((p) => ({ ...p, content: { ...p.content, text: e.target.value } }))
-                            }
-                            className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Emoji"
-                            onChange={(e) =>
-                              setNewEvent((p) => ({ ...p, content: { ...p.content, emoji: e.target.value } }))
-                            }
-                            className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none"
+                            placeholder="Texto principal"
+                            value={newProps.text ?? ""}
+                            onChange={(e) => setNewProps((p) => ({ ...p, text: e.target.value }))}
+                            className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none col-span-2"
                           />
                           <div className="flex items-center gap-1">
                             <label className="text-[10px] text-white/40 shrink-0">Início (s)</label>
                             <input
-                              type="number" defaultValue={0} step={0.5}
-                              onChange={(e) =>
-                                setNewEvent((p) => ({ ...p, startTime: parseFloat(e.target.value) || 0 }))
-                              }
+                              type="number" value={newStartTime} step={0.5} min={0}
+                              onChange={(e) => setNewStartTime(parseFloat(e.target.value) || 0)}
                               className="flex-1 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
                             />
                           </div>
                           <div className="flex items-center gap-1">
                             <label className="text-[10px] text-white/40 shrink-0">Dur. (s)</label>
                             <input
-                              type="number" defaultValue={2} step={0.5} min={0.5}
-                              onChange={(e) =>
-                                setNewEvent((p) => ({ ...p, duration: parseFloat(e.target.value) || 2 }))
-                              }
+                              type="number" value={newDuration} step={0.5} min={1.5} max={4}
+                              onChange={(e) => setNewDuration(parseFloat(e.target.value) || 2)}
                               className="flex-1 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
                             />
                           </div>
