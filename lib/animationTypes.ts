@@ -21,6 +21,7 @@ export type TemplateName =
   | 'ChromaticTransition'
   | 'FrostedTransition'
   | 'TextStack'
+  | 'ShaderReveal'
 
 export interface TemplateProps {
   // shared
@@ -163,5 +164,12 @@ export const TEMPLATE_CATALOG: TemplateInfo[] = [
     icon: '📐',
     desc: 'Texto com camadas 3D e perspectiva (motionforge)',
     defaultProps: { text: 'IMPACT', accentColor: '#00c4f0' },
+  },
+  {
+    name: 'ShaderReveal',
+    label: 'Shader Reveal',
+    icon: '🌀',
+    desc: 'Dissolve orgânico via Perlin noise — efeito cinematográfico (motionforge)',
+    defaultProps: { text: 'REVEAL', accentColor: '#00c4f0' },
   },
 ]

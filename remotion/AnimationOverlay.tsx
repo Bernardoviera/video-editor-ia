@@ -4,7 +4,7 @@ import type { AnimationEvent, TemplateName, TemplateProps } from '../lib/animati
 import {
   DarkReveal, ImpactTitle, GlitchReveal, WordPop, SlideIn,
   BlurTitle, TrackingReveal, ShimmerText, LiquidFill, FloatCard,
-  ChromaticTransition, FrostedTransition, TextStack,
+  ChromaticTransition, FrostedTransition, TextStack, ShaderReveal,
 } from './templates'
 
 interface Props {
@@ -28,6 +28,7 @@ function TemplateSwitch({ template, props }: { template: TemplateName; props: Te
     case 'ChromaticTransition': return <ChromaticTransition  {...props} />
     case 'FrostedTransition':   return <FrostedTransition    {...props} />
     case 'TextStack':           return <TextStack            {...props} />
+    case 'ShaderReveal':        return <ShaderReveal         {...props} />
     default:                    return null
   }
 }
