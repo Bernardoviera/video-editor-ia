@@ -35,8 +35,11 @@ export async function POST(req: NextRequest) {
     try { animationEvents = JSON.parse(eventsRaw); } catch { /* ignore */ }
   }
 
+  const VALID_STYLES: CaptionStyle[] = ["bold", "bounce", "clean"];
   const captionStyle: CaptionStyle =
-    styleRaw === "bold" || styleRaw === "clean" ? styleRaw : "bounce";
+    VALID_STYLES.includes(styleRaw as CaptionStyle)
+      ? (styleRaw as CaptionStyle)
+      : "bounce";
 
   cleanupOldJobs();
 

@@ -15,10 +15,25 @@ function toAssTime(seconds: number): string {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(cs).padStart(2, '0')}`
 }
 
+// ASS colour = &H00BBGGRR (no alpha, BGR order)
+// bold  → yellow  #FFE600 → R=FF G=E6 B=00 → &H0000E6FF&
+// bounce → red    #E53E3E → R=E5 G=3E B=3E → &H003E3EE5&
+// clean  → cyan   #00C4F0 → R=00 G=C4 B=F0 → &H00F0C400&
+const ACTIVE_COLOUR: Record<CaptionStyle, string> = {
+  bold:   '{\\c&H0000E6FF&}',
+  bounce: '{\\c&H003E3EE5&}',
+  clean:  '{\\c&H00F0C400&}',
+}
+const RESET_COLOUR = '{\\c&H00FFFFFF&}'
+
+// Style line: Name, Fontname, Fontsize, Primary, Secondary, Outline, Back,
+//             Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing,
+//             Angle, BorderStyle, Outline, Shadow, Alignment,
+//             MarginL, MarginR, MarginV, Encoding
 const STYLE_LINES: Record<CaptionStyle, string> = {
-  bold:   'Style: Default,Open Sans,82,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,5,0,2,30,30,120,1',
+  bold:   'Style: Default,Open Sans,90,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,6,0,2,30,30,120,1',
   bounce: 'Style: Default,Open Sans,78,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,4,0,2,30,30,120,1',
-  clean:  'Style: Default,Inter,60,&H00FFFFFF,&H000000FF,&H00000000,&H40000000,0,0,0,0,100,100,0,0,1,2,2,2,30,30,140,1',
+  clean:  'Style: Default,Inter,58,&H00FFFFFF,&H000000FF,&H00000000,&H40000000,0,0,0,0,100,100,0,0,1,2,2,2,30,30,140,1',
 }
 
 export async function generateAss(
@@ -27,6 +42,8 @@ export async function generateAss(
   captionStyle: CaptionStyle = 'bounce'
 ): Promise<void> {
   const GROUP = 5
+  const activeColour = ACTIVE_COLOUR[captionStyle]
+
   const lines: string[] = [
     '[Script Info]',
     'ScriptType: v4.00+',
@@ -64,7 +81,7 @@ export async function generateAss(
       const text = group
         .map((w, idx) => {
           const t = w.word.trim().toUpperCase()
-          if (idx === j) return `{\\c&H3E3EE5&}${t}{\\c&HFFFFFF&}`
+          if (idx === j) return `${activeColour}${t}${RESET_COLOUR}`
           return t
         })
         .join(' ')

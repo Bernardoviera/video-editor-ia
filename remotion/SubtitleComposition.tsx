@@ -11,26 +11,56 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { fitTextOnNLines } from "@remotion/layout-utils";
 import { createTikTokStyleCaptions, type Caption, type TikTokPage } from "@remotion/captions";
 import { TranscriptionWord } from "../lib/whisper";
 import { AnimationOverlay } from "./AnimationOverlay";
-import type { AnimationEvent } from "../lib/animationTypes";
-
-const FONT_FAMILY = "Inter";
-const fontFamily = FONT_FAMILY;
+import type { AnimationEvent, CaptionStyle } from "../lib/animationTypes";
 
 interface Props {
   videoSrc: string;
   words: TranscriptionWord[];
   events?: AnimationEvent[];
+  captionStyle?: CaptionStyle;
 }
 
-const HIGHLIGHT = "#E53E3E";
-const TEXT_SHADOW =
-  "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000";
-const MAX_FONT_SIZE = 38;
-const MAX_BOX_WIDTH = 1200;
+// ── Per-style visual config ───────────────────────────────────────────────────
+
+const STYLE_CFG = {
+  bold: {
+    maxFontSize:   54,
+    fontFamily:    "Open Sans, sans-serif",
+    fontWeight:    900,
+    highlight:     "#FFE600",   // yellow
+    textColor:     "#FFFFFF",
+    textShadow:    "-4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 4px 4px 0 #000",
+    uppercase:     true,
+    combineMs:     800,
+  },
+  bounce: {
+    maxFontSize:   42,
+    fontFamily:    "Open Sans, sans-serif",
+    fontWeight:    700,
+    highlight:     "#E53E3E",   // red
+    textColor:     "#FFFFFF",
+    textShadow:    "-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000",
+    uppercase:     true,
+    combineMs:     1200,
+  },
+  clean: {
+    maxFontSize:   30,
+    fontFamily:    "Inter, sans-serif",
+    fontWeight:    400,
+    highlight:     "#00c4f0",   // cyan
+    textColor:     "rgba(255,255,255,0.9)",
+    textShadow:    "0 2px 10px rgba(0,0,0,0.85)",
+    uppercase:     false,
+    combineMs:     1800,
+  },
+} satisfies Record<CaptionStyle, {
+  maxFontSize: number; fontFamily: string; fontWeight: number;
+  highlight: string; textColor: string; textShadow: string;
+  uppercase: boolean; combineMs: number;
+}>
 
 function wordsToCaptions(words: TranscriptionWord[]): Caption[] {
   return words.map((w, i) => ({
@@ -42,16 +72,18 @@ function wordsToCaptions(words: TranscriptionWord[]): Caption[] {
   }));
 }
 
+// ── SubtitleOverlay ───────────────────────────────────────────────────────────
+
 function SubtitleOverlay({
   pages,
   videoWidth,
   videoHeight,
-  fontsLoaded,
+  cfg,
 }: {
   pages: TikTokPage[];
   videoWidth: number;
   videoHeight: number;
-  fontsLoaded: boolean;
+  cfg: typeof STYLE_CFG[CaptionStyle];
 }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -66,22 +98,11 @@ function SubtitleOverlay({
     (t) => currentTimeMs >= t.fromMs && currentTimeMs < t.toMs
   );
 
-  let fontSize = MAX_FONT_SIZE;
-  if (fontsLoaded) {
-    try {
-      const result = fitTextOnNLines({
-        text: activePage.text.trim(),
-        maxLines: 2,
-        maxBoxWidth: MAX_BOX_WIDTH,
-        fontFamily,
-        fontWeight: "700",
-        maxFontSize: MAX_FONT_SIZE,
-      });
-      fontSize = result.fontSize;
-    } catch {
-      // Font not ready yet
-    }
-  }
+  // Simple font size: scale to fit roughly 2 lines at videoWidth
+  const charsPerLine = Math.max(1, Math.floor((videoWidth - 80) / (cfg.maxFontSize * 0.55)));
+  const longestWord  = Math.max(...activePage.tokens.map((t) => t.text.trim().length));
+  const fontSize     = Math.min(cfg.maxFontSize, Math.floor((videoWidth - 80) / Math.max(longestWord, 1) / 0.6));
+  const effectiveSize = Math.max(16, Math.min(cfg.maxFontSize, fontSize, charsPerLine > 0 ? cfg.maxFontSize : 16));
 
   return (
     <div
@@ -94,63 +115,83 @@ function SubtitleOverlay({
         paddingLeft: 40,
         paddingRight: 40,
         textAlign: "center",
-        fontFamily,
-        fontWeight: 700,
-        fontSize,
+        fontFamily: cfg.fontFamily,
+        fontWeight: cfg.fontWeight,
+        fontSize: effectiveSize,
         lineHeight: 1.25,
-        textShadow: TEXT_SHADOW,
+        textShadow: cfg.textShadow,
         letterSpacing: "-0.5px",
         wordBreak: "break-word",
         overflowWrap: "break-word",
       }}
     >
-      {activePage.tokens.map((token, i) => (
-        <span key={i} style={{ color: i === activeTokenIdx ? HIGHLIGHT : "#ffffff" }}>
-          {token.text}
-        </span>
-      ))}
+      {activePage.tokens.map((token, i) => {
+        const isActive = i === activeTokenIdx;
+        const text     = cfg.uppercase ? token.text.trim().toUpperCase() : token.text.trim();
+        return (
+          <span
+            key={i}
+            style={{
+              color: isActive ? cfg.highlight : cfg.textColor,
+              textDecoration: isActive && !cfg.uppercase ? "underline" : "none",
+            }}
+          >
+            {i === 0 ? text : ` ${text}`}
+          </span>
+        );
+      })}
     </div>
   );
 }
 
-export const SubtitleComposition: React.FC<Props> = ({ videoSrc, words, events = [] }) => {
+// ── Root composition ──────────────────────────────────────────────────────────
+
+export const SubtitleComposition: React.FC<Props> = ({
+  videoSrc,
+  words,
+  events = [],
+  captionStyle = "bounce",
+}) => {
   const { width, height } = useVideoConfig();
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [handle] = useState(() => delayRender("Loading Inter font"));
+  const [handle] = useState(() => delayRender("Loading font"));
+
+  const cfg = STYLE_CFG[captionStyle];
 
   useEffect(() => {
-    const face = new FontFace(
-      FONT_FAMILY,
-      `url(${staticFile("fonts/Inter-Bold.woff2")})`,
-      { weight: "700", style: "normal" }
-    );
-    face
-      .load()
-      .then(() => {
-        document.fonts.add(face);
-        setFontsLoaded(true);
-        continueRender(handle);
-      })
+    // Load Inter for clean style; Open Sans is web-safe enough without loading
+    const fontName = captionStyle === "clean" ? "Inter" : "Open Sans";
+    const fontSrc  = captionStyle === "clean"
+      ? `url(${staticFile("fonts/Inter-Bold.woff2")})`
+      : null;
+
+    if (!fontSrc) { continueRender(handle); return; }
+
+    const face = new FontFace(fontName, fontSrc, { weight: "400", style: "normal" });
+    face.load()
+      .then(() => { document.fonts.add(face); continueRender(handle); })
       .catch((err) => cancelRender(err));
-  }, [handle]);
+  }, [handle, captionStyle]);
 
   const pages = useMemo(() => {
     const captions = wordsToCaptions(words);
     const { pages: p } = createTikTokStyleCaptions({
       captions,
-      combineTokensWithinMilliseconds: 1500,
+      combineTokensWithinMilliseconds: cfg.combineMs,
     });
     return p;
-  }, [words]);
+  }, [words, cfg.combineMs]);
 
   return (
     <AbsoluteFill>
-      <OffthreadVideo src={videoSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      <OffthreadVideo
+        src={videoSrc}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      />
       <SubtitleOverlay
         pages={pages}
         videoWidth={width}
         videoHeight={height}
-        fontsLoaded={fontsLoaded}
+        cfg={cfg}
       />
       {events.length > 0 && (
         <AnimationOverlay events={events} width={width} height={height} />

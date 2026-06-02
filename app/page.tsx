@@ -452,6 +452,7 @@ export default function Home() {
                     duration={transcription.duration}
                     videoDimensions={videoDimensions}
                     events={animationEvents}
+                    captionStyle={captionStyle}
                   />
                   <p className="text-[10px] text-white/25 text-center mt-2">
                     As animações atualizam automaticamente ao editar a lista
