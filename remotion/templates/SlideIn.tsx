@@ -21,14 +21,14 @@ export function SlideIn({
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#111111", overflow: "hidden",
+        background: "#000000", overflow: "hidden",
       }}
     >
       <SlidingText
         text={text ?? "SLIDE TEXT"}
         direction={(direction ?? "left") as "left" | "right" | "top" | "bottom"}
         color={color ?? "#ffffff"}
-        fontSize={84}
+        fontSize={59}
         fontWeight={900}
       />
     </AbsoluteFill>

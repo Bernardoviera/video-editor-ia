@@ -16,7 +16,7 @@ export function ShaderReveal({ text = "REVEAL", accentColor = "#F5813F" }: Templ
         {/* Dark overlay with text revealed by Perlin dissolve */}
         <AbsoluteFill
           style={{
-            background: "#111111",
+            background: "#000000",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -31,12 +31,14 @@ export function ShaderReveal({ text = "REVEAL", accentColor = "#F5813F" }: Templ
             <div
               style={{
                 color: "#ffffff",
-                fontSize: 84,
+                fontSize: 59,
                 fontFamily: "Open Sans, sans-serif",
                 fontWeight: 900,
                 textTransform: "uppercase",
                 letterSpacing: "-1px",
                 lineHeight: 1.1,
+                maxWidth: "80%",
+                wordBreak: "break-word",
                 textShadow: `0 0 40px ${accentColor ?? "#00c4f0"}88, 0 4px 0 rgba(0,0,0,0.8)`,
               }}
             >

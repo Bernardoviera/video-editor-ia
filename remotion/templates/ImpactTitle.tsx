@@ -26,7 +26,7 @@ export function ImpactTitle({ text = "AFIRMAÇÃO FORTE", subtitle = "", lineCol
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#111111",
+        background: "#000000",
         padding: "0 50px",
       }}
     >
@@ -38,7 +38,7 @@ export function ImpactTitle({ text = "AFIRMAÇÃO FORTE", subtitle = "", lineCol
             type="velocity"
             durationInFrames={Math.floor(durationInFrames * 0.55)}
             stagger={2}
-            fontSize={88}
+            fontSize={62}
             fontWeight={900}
             color="#ffffff"
             style={{

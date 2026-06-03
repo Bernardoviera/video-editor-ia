@@ -82,7 +82,7 @@ async function renderRemotionOverlay(options: {
     },
     serveUrl: bundleLocation,
     codec: 'vp9',
-    pixelFormat: 'yuva420p',
+    pixelFormat: 'yuv420p',
     outputLocation: options.overlayPath,
     inputProps,
     chromiumOptions: { disableWebSecurity: true, gl: 'swiftshader' },
@@ -144,12 +144,17 @@ export async function renderVideo(options: RenderOptions): Promise<{ filePath: s
         duration: effectiveDuration,
       })
 
-      // Step 3: composite overlay over video with captions
+      // Step 3: splice Remotion output only during animation time ranges
+      // (yuv420p — no alpha; enable= switches overlay on/off by timestamp)
+      const enableExpr = animationEvents
+        .map((e) => `between(t,${e.startTime.toFixed(3)},${(e.startTime + e.duration).toFixed(3)})`)
+        .join('+')
+
       await runFFmpeg([
         '-y',
         '-i', tempPath,
         '-i', overlayPath,
-        '-filter_complex', '[0:v][1:v]overlay=0:0:format=auto[vout]',
+        '-filter_complex', `[0:v][1:v]overlay=0:0:enable='${enableExpr}'[vout]`,
         '-map', '[vout]',
         '-map', '0:a',
         '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',

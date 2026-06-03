@@ -21,14 +21,14 @@ export function WordPop({
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#111111", padding: "0 50px",
+        background: "#000000", padding: "0 50px",
       }}
     >
       <PoppingText
         text={text ?? "UMA PALAVRA POR VEZ"}
         popColor={popColor ?? "#FFE600"}
         staggerDelay={staggerDelay ?? 4}
-        fontSize={80}
+        fontSize={56}
         fontWeight={900}
       />
     </AbsoluteFill>

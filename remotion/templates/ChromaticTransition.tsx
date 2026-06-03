@@ -10,14 +10,15 @@ export function ChromaticTransition({ text = "TRANSIÇÃO", accentColor = "#F581
   const fromPanel = (
     <AbsoluteFill
       style={{
-        background: "#111111",
+        background: "#000000",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
     >
       <span
         style={{
-          color: "#ffffff", fontSize: 80, fontFamily: "Open Sans, sans-serif",
+          color: "#ffffff", fontSize: 56, fontFamily: "Open Sans, sans-serif",
           fontWeight: 900, textTransform: "uppercase", letterSpacing: "-1px",
+          maxWidth: "80%", wordBreak: "break-word", textAlign: "center",
           textShadow: `0 0 40px ${accentColor ?? "#00c4f0"}88`,
         }}
       >

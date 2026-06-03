@@ -17,16 +17,16 @@ export function LiquidFill({ text = "LIQUID", fillColor = "#F5813F", waveSpeed =
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#111111",
+        background: "#000000",
       }}
     >
       <LiquidText
         text={(text ?? "LIQUID").toUpperCase()}
-        width={900}
-        height={200}
-        fillColor={fillColor ?? "#00c4f0"}
-        strokeColor={fillColor ?? "#00c4f0"}
-        fontSize={180}
+        width={700}
+        height={160}
+        fillColor={fillColor ?? "#F5813F"}
+        strokeColor={fillColor ?? "#F5813F"}
+        fontSize={126}
         fontWeight="bold"
         speed={(waveSpeed ?? 1) * 0.05}
         amplitude={20}

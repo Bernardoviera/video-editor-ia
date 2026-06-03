@@ -37,7 +37,7 @@ export function DarkReveal({ text = "IMPACTO", accentColor = "#F5813F" }: Templa
             type="reveal"
             durationInFrames={Math.floor(durationInFrames * 0.5)}
             stagger={2}
-            fontSize={82}
+            fontSize={57}
             fontWeight={900}
             color="#ffffff"
             style={{

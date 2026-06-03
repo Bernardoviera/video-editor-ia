@@ -22,14 +22,14 @@ export function GlitchReveal({ text = "GLITCH", glitchColor = "#F5813F" }: Templ
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#111111",
+        background: "#000000",
       }}
     >
       {isGlitching ? (
         <GlitchText
           text={(text ?? "GLITCH").toUpperCase()}
           glitchColor={glitchColor ?? "#00c4f0"}
-          fontSize={86}
+          fontSize={60}
           fontWeight={900}
         />
       ) : (
@@ -38,7 +38,7 @@ export function GlitchReveal({ text = "GLITCH", glitchColor = "#F5813F" }: Templ
           type="glitch"
           durationInFrames={Math.floor(durationInFrames * 0.6)}
           stagger={3}
-          fontSize={86}
+          fontSize={60}
           fontWeight={900}
           color="#ffffff"
           style={{ justifyContent: "center", letterSpacing: "-1px" }}

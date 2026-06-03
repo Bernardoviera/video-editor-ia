@@ -41,7 +41,7 @@ export const AnimationOverlay: React.FC<Props> = ({ events }) => {
   const { fps } = useVideoConfig()
 
   return (
-    <AbsoluteFill style={{ background: 'transparent' }}>
+    <AbsoluteFill style={{ background: '#000000' }}>
       {events.map((event) => {
         const startFrame     = Math.round(event.startTime * fps)
         const durationFrames = Math.max(1, Math.round(event.duration * fps))

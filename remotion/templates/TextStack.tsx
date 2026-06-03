@@ -18,7 +18,7 @@ export function TextStack({ text = "IMPACT", accentColor = "#F5813F" }: Template
       style={{
         opacity: (1 - fadeOut) * opacity,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#111111",
+        background: "#000000",
         padding: "0 60px",
       }}
     >
@@ -26,7 +26,7 @@ export function TextStack({ text = "IMPACT", accentColor = "#F5813F" }: Template
         text={(text ?? "IMPACT").toUpperCase()}
         layers={8}
         depth={5}
-        fontSize={120}
+        fontSize={84}
         fontWeight="900"
         mainColor="#ffffff"
         layerColor={accentColor ?? "#00c4f0"}

@@ -35,27 +35,30 @@ export function LabelOverlay({
   const exitBlur = interpolate(exit, [0, 1], [0, 7]);
 
   return (
-    <AbsoluteFill style={{ background: "#111111" }}>
+    <AbsoluteFill style={{ background: "#000000" }}>
       <AbsoluteFill
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 8,
-          padding: "0 60px",
+          gap: 10,
+          padding: "0 80px",
         }}
       >
         <div
           style={{
             fontFamily: "Open Sans, sans-serif",
             fontWeight: 900,
-            fontSize: 36,
+            fontSize: 26,
             color: "#F5813F",
             textTransform: "uppercase",
             textAlign: "center",
             letterSpacing: "0.04em",
-            lineHeight: 1.15,
+            lineHeight: 1.25,
+            maxWidth: "80%",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
             opacity: titleOp * exitOp,
             transform: `translateY(${titleY + exitY}px)`,
             filter: `blur(${titleBlur + exitBlur}px)`,
@@ -67,10 +70,13 @@ export function LabelOverlay({
           style={{
             fontFamily: "Open Sans, sans-serif",
             fontWeight: 900,
-            fontSize: 48,
+            fontSize: 34,
             color: "#FFFFFF",
             textAlign: "center",
-            lineHeight: 1.15,
+            lineHeight: 1.25,
+            maxWidth: "80%",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
             opacity: subOp * exitOp,
             transform: `translateY(${subY + exitY}px)`,
             filter: `blur(${subBlur + exitBlur}px)`,
