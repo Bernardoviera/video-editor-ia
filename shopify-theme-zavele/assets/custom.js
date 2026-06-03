@@ -1,27 +1,16 @@
 /**
- * Zavele Theme - custom.js
- *
- * Yampi Checkout Integration:
- * When yampiCheckoutUrl is configured in theme settings, all checkout
- * actions redirect to Yampi instead of Shopify's native checkout.
+ * Yampi Checkout Integration
+ * Quando yampi_checkout_url estiver configurado nas Integrações do tema,
+ * os botões de checkout redirecionam para o Yampi automaticamente.
  */
-
 (function () {
-  'use strict';
-
   var yampiUrl = (window.theme && window.theme.yampiCheckoutUrl) || '';
-
   if (!yampiUrl) return;
 
-  // Intercept Shopify checkout button clicks and redirect to Yampi
-  function redirectToYampi(variantId, quantity) {
+  function goYampi(variantId, qty) {
     var url = yampiUrl;
-    if (variantId) {
-      url += (url.indexOf('?') === -1 ? '?' : '&') + 'variant=' + variantId;
-    }
-    if (quantity && quantity > 1) {
-      url += '&qty=' + quantity;
-    }
+    if (variantId) url += (url.indexOf('?') === -1 ? '?' : '&') + 'variant=' + variantId;
+    if (qty && qty > 1) url += '&qty=' + qty;
     window.location.href = url;
   }
 
@@ -30,34 +19,16 @@
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
-    redirectToYampi();
+    goYampi();
   }, true);
 
-  // Intercept form submission to /checkout
   document.addEventListener('submit', function (e) {
     var form = e.target;
     if (form && form.action && form.action.indexOf('/checkout') !== -1) {
       e.preventDefault();
-      var variantInput = form.querySelector('[name="id"]');
-      var qtyInput = form.querySelector('[name="quantity"]');
-      redirectToYampi(
-        variantInput ? variantInput.value : null,
-        qtyInput ? qtyInput.value : null
-      );
+      var v = form.querySelector('[name="id"]');
+      var q = form.querySelector('[name="quantity"]');
+      goYampi(v ? v.value : null, q ? q.value : null);
     }
   }, true);
-
 })();
-
-/**
- * Theme event hooks (available for custom extensions):
- *
- * document.addEventListener('variant:changed', function(event) {
- *   var variant = event.detail.variant;
- * });
- *
- * document.addEventListener('product:added', function(event) {
- *   var variant = event.detail.variant;
- *   var quantity = event.detail.quantity;
- * });
- */
