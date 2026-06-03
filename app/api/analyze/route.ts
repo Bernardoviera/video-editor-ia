@@ -25,52 +25,62 @@ export async function POST(req: NextRequest) {
   const effectivePrompt = userPrompt.trim() || DEFAULT_PROMPT;
 
   const systemPrompt = `Você é um editor de vídeo profissional especializado em motion design para redes sociais.
-Analise a transcrição e sugira animações usando APENAS os templates disponíveis.
-Para cada momento impactante, escolha o template mais adequado ao conteúdo.
 
-Templates disponíveis e quando usar:
-- DarkReveal: frases de grande impacto, momentos climáticos, revelações importantes
-- ImpactTitle: títulos, afirmações fortes, conclusões poderosas
-- GlitchReveal: momentos de tensão, contraste, quebra de expectativa
-- WordPop: listas, enumerações, sequências de palavras-chave
-- SlideIn: introdução de conceitos, transições, contexto adicional
-- BlurTitle: momentos contemplativos, frases reflexivas
-- TrackingReveal: nomes, marcas, conceitos importantes
-- ShimmerText: números, estatísticas, conquistas, resultados
-- LiquidFill: palavras de uma sílaba para maior impacto visual
-- FloatCard: dicas, contexto extra, informações complementares
+REGRA ABSOLUTA: Todo texto nas props das animações deve ser retirado LITERALMENTE da transcrição fornecida pelo usuário. NUNCA invente, parafraseie ou use textos de exemplo. Se a transcrição não contiver um número ou frase adequada para determinado template, não use esse template.
 
-Regras importantes:
+Templates disponíveis e quando usar (leia os campos de props com atenção):
+
+LabelOverlay — vídeo continua, overlay leve. Use para frases de impacto curtas.
+  props: { title: "PALAVRA(S) DA TRANSCRIÇÃO EM CAPS (3-4 palavras)", subtitle: "frase ou número da transcrição" }
+
+StatCard — tela cheia azul. Use APENAS quando houver número/percentual/estatística real na transcrição.
+  props: { value: "número exato da transcrição", category: "contexto do número (da transcrição)", context: "frase explicativa da transcrição" }
+
+MoneyCard — overlay pesado. Use APENAS quando houver valor monetário real na transcrição.
+  props: { value: "valor exato da transcrição", label: "o que representa (da transcrição)", accent: "palavra de contexto da transcrição" }
+
+DarkReveal — frases de grande impacto, revelações importantes.
+  props: { text: "FRASE CURTA DA TRANSCRIÇÃO" }
+
+ImpactTitle — afirmações fortes, conclusões.
+  props: { text: "FRASE DA TRANSCRIÇÃO", subtitle: "complemento da transcrição (opcional)" }
+
+GlitchReveal — momentos de tensão ou contraste.
+  props: { text: "FRASE DA TRANSCRIÇÃO" }
+
+WordPop — listas ou sequências de palavras-chave.
+  props: { text: "PALAVRAS DA TRANSCRIÇÃO" }
+
+SlideIn — introdução de conceitos ou contexto.
+  props: { text: "FRASE DA TRANSCRIÇÃO", direction: "left|right|top|bottom" }
+
+ShimmerText — números, estatísticas ou conquistas.
+  props: { text: "NÚMERO OU STAT DA TRANSCRIÇÃO" }
+
+FloatCard — dicas ou informações complementares.
+  props: { title: "TÍTULO DA TRANSCRIÇÃO", body: "corpo do card da transcrição" }
+
+Regras de estrutura:
 - Gere entre 4 e 7 animações por vídeo
-- NÃO sobreponha animações — respeite start + duration de cada uma
-- Espaçe bem as animações ao longo do vídeo
-- Props de texto devem ser CURTOS (máximo 4-5 palavras em CAPS)
-- Retorne APENAS o array JSON, sem markdown, sem explicações
+- NÃO sobreponha animações — respeite startTime + duration de cada uma
+- Espaçe as animações ao longo do vídeo
+- Retorne APENAS o array JSON, sem markdown, sem explicações`;
 
-Formato de cada evento:
+  const userMessage = `Transcrição do vídeo (USE APENAS ESTE CONTEÚDO para os textos das animações):
+${transcriptionText}
+
+Instrução adicional: ${effectivePrompt}
+
+Formato de cada evento no array:
 {
   "id": "ev-1",
   "template": "NomeDoTemplate",
-  "startTime": <número em segundos>,
+  "startTime": <segundos do momento na transcrição>,
   "duration": <número entre 1.5 e 3.5>,
-  "props": {
-    "text": "TEXTO CURTO EM CAPS",
-    "accentColor": "#cor_hex",
-    "subtitle": "opcional para ImpactTitle",
-    "direction": "left|right|top|bottom (para SlideIn)",
-    "title": "TÍTULO (para FloatCard)",
-    "body": "Corpo do card (para FloatCard)"
-  }
-}`;
+  "props": { <campos do template conforme acima, texto APENAS da transcrição> }
+}
 
-  const userMessage = `Estilo de legenda: ${captionStyle}
-
-Transcrição:
-${transcriptionText}
-
-Instrução: ${effectivePrompt}
-
-Retorne o array JSON de animações:`;
+Retorne o array JSON:`;
 
   try {
     const completion = await client.chat.completions.create({
@@ -96,6 +106,7 @@ Retorne o array JSON de animações:`;
     }
 
     const VALID_TEMPLATES = new Set([
+      "LabelOverlay","StatCard","MoneyCard",
       "DarkReveal","ImpactTitle","GlitchReveal","WordPop","SlideIn",
       "BlurTitle","TrackingReveal","ShimmerText","LiquidFill","FloatCard",
     ])
