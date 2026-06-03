@@ -4,7 +4,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remo
 import { TextStack3D } from "../components/motionforge/TextStack3D";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function TextStack({ text = "IMPACT", accentColor = "#00c4f0" }: TemplateProps) {
+export function TextStack({ text = "IMPACT", accentColor = "#F5813F" }: TemplateProps) {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
@@ -18,7 +18,7 @@ export function TextStack({ text = "IMPACT", accentColor = "#00c4f0" }: Template
       style={{
         opacity: (1 - fadeOut) * opacity,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.78)",
+        background: "#111111",
         padding: "0 60px",
       }}
     >

@@ -4,7 +4,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remo
 import { KineticTypography } from "../components/motionforge/KineticTypography";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function ImpactTitle({ text = "AFIRMAÇÃO FORTE", subtitle = "", lineColor = "#00c4f0" }: TemplateProps) {
+export function ImpactTitle({ text = "AFIRMAÇÃO FORTE", subtitle = "", lineColor = "#F5813F" }: TemplateProps) {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
@@ -26,7 +26,7 @@ export function ImpactTitle({ text = "AFIRMAÇÃO FORTE", subtitle = "", lineCol
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.45) 100%)",
+        background: "#111111",
         padding: "0 50px",
       }}
     >

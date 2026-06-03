@@ -21,7 +21,7 @@ export function SlideIn({
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.6)", overflow: "hidden",
+        background: "#111111", overflow: "hidden",
       }}
     >
       <SlidingText

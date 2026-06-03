@@ -5,7 +5,7 @@ import { GlitchText } from "../components/clippkit/GlitchText";
 import { KineticTypography } from "../components/motionforge/KineticTypography";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function GlitchReveal({ text = "GLITCH", glitchColor = "#00c4f0" }: TemplateProps) {
+export function GlitchReveal({ text = "GLITCH", glitchColor = "#F5813F" }: TemplateProps) {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
@@ -22,7 +22,7 @@ export function GlitchReveal({ text = "GLITCH", glitchColor = "#00c4f0" }: Templ
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.75)",
+        background: "#111111",
       }}
     >
       {isGlitching ? (

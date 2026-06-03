@@ -4,9 +4,9 @@ import { AbsoluteFill } from "remotion";
 import { ShimmerSweep } from "../components/remocn/ShimmerSweep";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function ShimmerText({ text = "100% RESULTADO", baseColor = "#ffffff", shineColor = "#FFE600" }: TemplateProps) {
+export function ShimmerText({ text = "100% RESULTADO", baseColor = "#ffffff", shineColor = "#F5813F" }: TemplateProps) {
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ background: "#111111" }}>
       <ShimmerSweep
         text={(text ?? "100% RESULTADO").toUpperCase()}
         baseColor={baseColor ?? "#ffffff"}

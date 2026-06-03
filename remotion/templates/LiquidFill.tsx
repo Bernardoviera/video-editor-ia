@@ -4,7 +4,7 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remo
 import { LiquidText } from "../components/motionforge/LiquidText";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function LiquidFill({ text = "LIQUID", fillColor = "#00c4f0", waveSpeed = 1 }: TemplateProps) {
+export function LiquidFill({ text = "LIQUID", fillColor = "#F5813F", waveSpeed = 1 }: TemplateProps) {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
@@ -17,7 +17,7 @@ export function LiquidFill({ text = "LIQUID", fillColor = "#00c4f0", waveSpeed =
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.75)",
+        background: "#111111",
       }}
     >
       <LiquidText

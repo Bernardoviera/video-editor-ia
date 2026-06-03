@@ -5,11 +5,11 @@ import { CardExpansionMask } from "../components/motionforge/CardExpansionMask";
 import { KineticTypography } from "../components/motionforge/KineticTypography";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function DarkReveal({ text = "IMPACTO", accentColor = "#00c4f0" }: TemplateProps) {
+export function DarkReveal({ text = "IMPACTO", accentColor = "#F5813F" }: TemplateProps) {
   const frame = useCurrentFrame();
   const { durationInFrames, fps } = useVideoConfig();
 
-  const overlayOp = interpolate(frame, [0, 8], [0, 0.82], { extrapolateRight: "clamp" });
+  const overlayOp = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" });
   const fadeOut   = interpolate(frame, [durationInFrames - 8, durationInFrames], [0, 1], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   });
@@ -20,7 +20,7 @@ export function DarkReveal({ text = "IMPACTO", accentColor = "#00c4f0" }: Templa
   return (
     <AbsoluteFill style={{ opacity: 1 - fadeOut }}>
       {/* Dark overlay */}
-      <AbsoluteFill style={{ background: `rgba(0,0,0,${overlayOp})` }} />
+      <AbsoluteFill style={{ background: `rgb(${Math.round(17*overlayOp)},${Math.round(17*overlayOp)},${Math.round(17*overlayOp)})` }} />
 
       {/* Circle expand reveal via CardExpansionMask */}
       <CardExpansionMask durationInFrames={Math.floor(durationInFrames * 0.6)} centerX={50} centerY={50}>

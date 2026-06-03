@@ -4,13 +4,13 @@ import { AbsoluteFill, useVideoConfig } from "remotion";
 import { ChromaticAberrationWipe } from "../components/remocn/ChromaticAberrationWipe";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function ChromaticTransition({ text = "TRANSIÇÃO", accentColor = "#00c4f0", direction = "left" }: TemplateProps) {
+export function ChromaticTransition({ text = "TRANSIÇÃO", accentColor = "#F5813F", direction = "left" }: TemplateProps) {
   const { durationInFrames } = useVideoConfig();
 
   const fromPanel = (
     <AbsoluteFill
       style={{
-        background: "rgba(0,0,0,0.85)",
+        background: "#111111",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
     >

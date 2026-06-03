@@ -6,7 +6,7 @@ import type { TemplateProps } from "../../lib/animationTypes";
 
 export function TrackingReveal({ text = "LETRAS CONVERGINDO", startTracking = 0.6, color = "#ffffff" }: TemplateProps) {
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ background: "#111111" }}>
       <TrackingIn
         text={(text ?? "LETRAS CONVERGINDO").toUpperCase()}
         startTracking={startTracking ?? 0.6}

@@ -6,7 +6,7 @@ import type { TemplateProps } from "../../lib/animationTypes";
 
 export function BlurTitle({ text = "EMERGE DO BLUR", blur = 20, fontSize = 72, color = "#ffffff" }: TemplateProps) {
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ background: "#111111" }}>
       <BlurReveal
         text={(text ?? "EMERGE DO BLUR").toUpperCase()}
         blur={blur ?? 20}

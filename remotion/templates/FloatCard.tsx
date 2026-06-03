@@ -8,10 +8,10 @@ export function FloatCard({
   title        = "DICA",
   body         = "Informação de destaque aqui",
   cardPosition = "bottom-right",
-  accentColor  = "#00c4f0",
+  accentColor  = "#F5813F",
 }: TemplateProps) {
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ background: "#111111" }}>
       <FloatingCard
         title={title ?? "DICA"}
         body={body ?? "Informação de destaque aqui"}

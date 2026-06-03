@@ -4,13 +4,13 @@ import { AbsoluteFill, useVideoConfig } from "remotion";
 import { FrostedGlassWipe } from "../components/remocn/FrostedGlassWipe";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function FrostedTransition({ text = "PRÓXIMO", accentColor = "#00c4f0" }: TemplateProps) {
+export function FrostedTransition({ text = "PRÓXIMO", accentColor = "#F5813F" }: TemplateProps) {
   const { durationInFrames } = useVideoConfig();
 
   const fromPanel = (
     <AbsoluteFill
       style={{
-        background: "rgba(0,0,0,0.82)",
+        background: "#111111",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
     >

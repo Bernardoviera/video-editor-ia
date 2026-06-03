@@ -6,7 +6,7 @@ import type { TemplateProps } from "../../lib/animationTypes";
 
 export function WordPop({
   text         = "UMA PALAVRA POR VEZ",
-  popColor     = "#FFE600",
+  popColor     = "#F5813F",
   staggerDelay = 4,
 }: TemplateProps) {
   const frame = useCurrentFrame();
@@ -21,7 +21,7 @@ export function WordPop({
       style={{
         opacity: 1 - fadeOut,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.72)", padding: "0 50px",
+        background: "#111111", padding: "0 50px",
       }}
     >
       <PoppingText

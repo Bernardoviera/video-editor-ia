@@ -4,7 +4,7 @@ import { AbsoluteFill } from "remotion";
 import { ShaderImageReveal } from "../components/motionforge/ShaderImageReveal";
 import type { TemplateProps } from "../../lib/animationTypes";
 
-export function ShaderReveal({ text = "REVEAL", accentColor = "#00c4f0" }: TemplateProps) {
+export function ShaderReveal({ text = "REVEAL", accentColor = "#F5813F" }: TemplateProps) {
   return (
     <AbsoluteFill>
       <ShaderImageReveal
@@ -16,7 +16,7 @@ export function ShaderReveal({ text = "REVEAL", accentColor = "#00c4f0" }: Templ
         {/* Dark overlay with text revealed by Perlin dissolve */}
         <AbsoluteFill
           style={{
-            background: "rgba(0,0,0,0.82)",
+            background: "#111111",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
