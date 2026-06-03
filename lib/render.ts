@@ -148,11 +148,12 @@ export async function renderVideo(options: RenderOptions): Promise<{ filePath: s
       // yuva420p alpha ensures transparent pixels outside animations never cover the video.
       // enable= adds a time-based gate as extra protection.
       // Uses gte(t,s)*lte(t,e) instead of between(t,s,e) to avoid comma parsing issues.
+      // enable= uses gte(t,s)*lte(t,e) — no backslash escapes (args array, not shell)
       const enableExpr = animationEvents
         .map((e) => {
-          const s = e.startTime.toFixed(3)
+          const s  = e.startTime.toFixed(3)
           const en = (e.startTime + e.duration).toFixed(3)
-          return `gte(t\\,${s})*lte(t\\,${en})`
+          return `gte(t,${s})*lte(t,${en})`
         })
         .join('+')
 
