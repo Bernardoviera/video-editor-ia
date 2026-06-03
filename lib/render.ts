@@ -144,17 +144,15 @@ export async function renderVideo(options: RenderOptions): Promise<{ filePath: s
         duration: effectiveDuration,
       })
 
-      // Step 3: splice Remotion output only during animation time ranges
-      // (yuv420p — no alpha; enable= switches overlay on/off by timestamp)
-      const enableExpr = animationEvents
-        .map((e) => `between(t,${e.startTime.toFixed(3)},${(e.startTime + e.duration).toFixed(3)})`)
-        .join('+')
+      // Step 3: trim + concat — splice base video and Remotion output by time segments.
+      // This avoids any overlay/alpha compositing: each frame comes from exactly one source.
+      const filterComplex = buildSpliceFilter(animationEvents, effectiveDuration)
 
       await runFFmpeg([
         '-y',
         '-i', tempPath,
         '-i', overlayPath,
-        '-filter_complex', `[0:v][1:v]overlay=0:0:enable='${enableExpr}'[vout]`,
+        '-filter_complex', filterComplex,
         '-map', '[vout]',
         '-map', '0:a',
         '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
@@ -170,4 +168,40 @@ export async function renderVideo(options: RenderOptions): Promise<{ filePath: s
   }
 
   return { filePath: outPath }
+}
+
+// Builds a filter_complex that splices [0:v] (base video) and [1:v] (Remotion render)
+// using trim+setpts+concat so each time range comes from exactly one source.
+// Outside animation events → base video. During events → Remotion output.
+function buildSpliceFilter(events: AnimationEvent[], totalDuration: number): string {
+  const sorted = [...events].sort((a, b) => a.startTime - b.startTime)
+
+  type Seg = { start: number; end: number; src: 0 | 1 }
+  const segs: Seg[] = []
+  let cursor = 0
+
+  for (const e of sorted) {
+    const eStart = Math.max(cursor, e.startTime)
+    const eEnd   = Math.min(e.startTime + e.duration, totalDuration)
+    if (eEnd <= eStart) continue
+
+    if (eStart > cursor) segs.push({ start: cursor, end: eStart, src: 0 })
+    segs.push({ start: eStart, end: eEnd, src: 1 })
+    cursor = eEnd
+  }
+  if (cursor < totalDuration) segs.push({ start: cursor, end: totalDuration, src: 0 })
+
+  const filters: string[] = []
+  const labels: string[] = []
+
+  segs.forEach(({ start, end, src }, i) => {
+    const label = `seg${i}`
+    filters.push(
+      `[${src}:v]trim=start=${start.toFixed(3)}:end=${end.toFixed(3)},setpts=PTS-STARTPTS[${label}]`
+    )
+    labels.push(`[${label}]`)
+  })
+
+  filters.push(`${labels.join('')}concat=n=${segs.length}:v=1[vout]`)
+  return filters.join(';')
 }
