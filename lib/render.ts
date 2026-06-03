@@ -82,7 +82,7 @@ async function renderRemotionOverlay(options: {
     },
     serveUrl: bundleLocation,
     codec: 'vp9',
-    pixelFormat: 'yuv420p',
+    pixelFormat: 'yuva420p',
     outputLocation: options.overlayPath,
     inputProps,
     chromiumOptions: { disableWebSecurity: true, gl: 'swiftshader' },
@@ -144,15 +144,23 @@ export async function renderVideo(options: RenderOptions): Promise<{ filePath: s
         duration: effectiveDuration,
       })
 
-      // Step 3: trim + concat — splice base video and Remotion output by time segments.
-      // This avoids any overlay/alpha compositing: each frame comes from exactly one source.
-      const filterComplex = buildSpliceFilter(animationEvents, effectiveDuration)
+      // Step 3: overlay the transparent WebM only during animation time ranges.
+      // yuva420p alpha ensures transparent pixels outside animations never cover the video.
+      // enable= adds a time-based gate as extra protection.
+      // Uses gte(t,s)*lte(t,e) instead of between(t,s,e) to avoid comma parsing issues.
+      const enableExpr = animationEvents
+        .map((e) => {
+          const s = e.startTime.toFixed(3)
+          const en = (e.startTime + e.duration).toFixed(3)
+          return `gte(t\\,${s})*lte(t\\,${en})`
+        })
+        .join('+')
 
       await runFFmpeg([
         '-y',
         '-i', tempPath,
         '-i', overlayPath,
-        '-filter_complex', filterComplex,
+        '-filter_complex', `[0:v][1:v]overlay=0:0:enable='${enableExpr}'[vout]`,
         '-map', '[vout]',
         '-map', '0:a',
         '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
