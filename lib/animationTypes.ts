@@ -8,6 +8,9 @@ export type Intensity     = 'low' | 'medium' | 'high'
 // ── Fase 3: Template system ────────────────────────────────────────────────────
 
 export type TemplateName =
+  | 'LabelOverlay'
+  | 'StatCard'
+  | 'MoneyCard'
   | 'DarkReveal'
   | 'ImpactTitle'
   | 'GlitchReveal'
@@ -23,14 +26,27 @@ export type TemplateName =
   | 'TextStack'
   | 'ShaderReveal'
 
+/** Templates that replace the video entirely — subtitles must be suppressed */
+export const SUBTITLE_SUPPRESS_TEMPLATES: TemplateName[] = ['StatCard', 'MoneyCard']
+
 export interface TemplateProps {
   // shared
   text?:        string
   accentColor?: string
   color?:       string
   fontSize?:    number
-  // ImpactTitle
+  // LabelOverlay
+  title?:       string
   subtitle?:    string
+  // StatCard
+  value?:       string
+  category?:    string
+  context?:     string
+  // MoneyCard
+  icon?:        string
+  label?:       string
+  accent?:      string
+  // ImpactTitle
   lineColor?:   string
   // GlitchReveal
   glitchColor?: string
@@ -50,7 +66,6 @@ export interface TemplateProps {
   fillColor?:   string
   waveSpeed?:   number
   // FloatCard
-  title?:       string
   body?:        string
   cardPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'
 }
@@ -74,6 +89,27 @@ export interface TemplateInfo {
 }
 
 export const TEMPLATE_CATALOG: TemplateInfo[] = [
+  {
+    name: 'LabelOverlay',
+    label: 'Label Overlay',
+    icon: '🏷️',
+    desc: 'Título colorido + subtítulo flutuando sobre o vídeo com spring',
+    defaultProps: { title: 'SUA CLÍNICA PERDE', subtitle: 'R$ 15 MIL POR MÊS' },
+  },
+  {
+    name: 'StatCard',
+    label: 'Stat Card',
+    icon: '📊',
+    desc: 'Tela completa azul-marinho com número grande e contexto animado',
+    defaultProps: { value: '73%', category: 'das clínicas', context: 'perdem leads por falta de resposta rápida' },
+  },
+  {
+    name: 'MoneyCard',
+    label: 'Money Card',
+    icon: '💰',
+    desc: 'Overlay com ícone de moeda, valor em laranja e label em branco',
+    defaultProps: { value: 'R$ 13.200', label: 'POR MÊS', accent: 'PERDIDOS' },
+  },
   {
     name: 'DarkReveal',
     label: 'Dark Reveal',
