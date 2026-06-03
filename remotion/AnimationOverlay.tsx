@@ -2,6 +2,7 @@ import React from 'react'
 import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion'
 import type { AnimationEvent, TemplateName, TemplateProps } from '../lib/animationTypes'
 import {
+  LabelOverlay, StatCard, MoneyCard,
   DarkReveal, ImpactTitle, GlitchReveal, WordPop, SlideIn,
   BlurTitle, TrackingReveal, ShimmerText, LiquidFill, FloatCard,
   ChromaticTransition, FrostedTransition, TextStack, ShaderReveal,
@@ -15,6 +16,9 @@ interface Props {
 
 function TemplateSwitch({ template, props }: { template: TemplateName; props: TemplateProps }) {
   switch (template) {
+    case 'LabelOverlay':        return <LabelOverlay        {...props} />
+    case 'StatCard':            return <StatCard            {...props} />
+    case 'MoneyCard':           return <MoneyCard           {...props} />
     case 'DarkReveal':          return <DarkReveal          {...props} />
     case 'ImpactTitle':         return <ImpactTitle          {...props} />
     case 'GlitchReveal':        return <GlitchReveal         {...props} />
