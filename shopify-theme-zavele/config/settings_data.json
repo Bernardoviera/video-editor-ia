@@ -1,0 +1,308 @@
+{
+  "current": {
+    "heading_color": "#0D0D0D",
+    "text_color": "#3A3A3A",
+    "accent_color": "#C9A86C",
+    "link_color": "#C9A86C",
+    "border_color": "#E8E3DC",
+    "background": "#FFFFFF",
+    "secondary_background": "#FAFAF8",
+    "error_color": "#D93025",
+    "success_color": "#2E7D32",
+    "primary_button_background": "#C9A86C",
+    "primary_button_text_color": "#0D0D0D",
+    "secondary_button_background": "#0D0D0D",
+    "secondary_button_text_color": "#FFFFFF",
+    "header_background": "#0D0D0D",
+    "header_text_color": "#FFFFFF",
+    "header_light_text_color": "#9E9385",
+    "header_accent_color": "#C9A86C",
+    "footer_background_color": "#F5F0EB",
+    "footer_heading_text_color": "#0D0D0D",
+    "footer_body_text_color": "#3A3A3A",
+    "footer_accent_color": "#C9A86C",
+    "product_on_sale_accent": "#1A7D4A",
+    "product_in_stock_color": "#FFFFFF",
+    "product_low_stock_color": "#D93025",
+    "product_sold_out_color": "#9E9385",
+    "product_label_1_background": "#0D0D0D",
+    "product_label_2_background": "#C9A86C",
+    "product_star_color": "#C9A86C",
+    "base_text_font_size": 15,
+    "heading_font": "itc_avant_garde_gothic_n5",
+    "text_font": "basic_commercial_n4",
+    "underline_links": true,
+    "animation_image_zoom": true,
+    "search_mode": "product,article,page",
+    "show_vendor": false,
+    "show_secondary_image": true,
+    "show_discount": true,
+    "discount_mode": "percentage",
+    "product_price_position": "after_title",
+    "product_image_size": "square",
+    "show_color_swatch": false,
+    "show_inventory_quantity": true,
+    "low_inventory_threshold": 3,
+    "show_reviews_badge": false,
+    "cart_type": "page",
+    "cart_empty_button_link": "shopify://collections/all",
+    "cart_show_checkout_button": true,
+    "cart_show_free_shipping_threshold": false,
+    "cart_free_shipping_threshold": "50",
+    "checkout_logo_position": "center",
+    "checkout_logo_size": "medium",
+    "checkout_body_background_color": "#fff",
+    "checkout_input_background_color_mode": "white",
+    "checkout_sidebar_background_color": "#F5F0EB",
+    "checkout_accent_color": "#C9A86C",
+    "checkout_button_color": "#C9A86C",
+    "checkout_error_color": "#D93025",
+    "social_facebook": "",
+    "social_instagram": "",
+    "social_youtube": "",
+    "id_pixel": "",
+    "gtm_id": "",
+    "clarity_id": "",
+    "yampi_checkout_url": "",
+    "sections": {
+      "header": {
+        "type": "header",
+        "blocks": {
+          "mega-menu-0": {
+            "type": "mega_menu",
+            "disabled": true,
+            "settings": {}
+          },
+          "mega-menu-1": {
+            "type": "mega_menu",
+            "disabled": true,
+            "settings": {}
+          }
+        },
+        "block_order": ["mega-menu-0", "mega-menu-1"],
+        "settings": {
+          "enable_sticky_header": true,
+          "logo": "",
+          "logo_max_width": 180,
+          "mobile_logo_max_width": 130,
+          "show_locale_selector": true,
+          "show_currency_selector": true,
+          "navigation_menu": "main-menu",
+          "desktop_navigation_layout": "inline",
+          "desktop_navigation_open_trigger": "hover",
+          "show_navigation_social_media": true,
+          "navigation_phone_number": "WhatsApp: (xx) xxxxx-xxxx",
+          "navigation_email": "contato@zavele.com.br",
+          "show_condensed_search": true,
+          "show_search_filter": true,
+          "search_menu": "",
+          "show_search_menu_title": true
+        }
+      },
+      "footer": {
+        "type": "footer",
+        "blocks": {
+          "footer-0": {
+            "type": "text",
+            "settings": {
+              "title": "CONTATO",
+              "content": "<p>ZAVELE<br/>E-mail: contato@zavele.com.br<br/>WhatsApp: (xx) xxxxx-xxxx</p>"
+            }
+          },
+          "footer-1": {
+            "type": "links",
+            "settings": {
+              "menu": "footer"
+            }
+          },
+          "footer-2": {
+            "type": "newsletter",
+            "settings": {
+              "title": "",
+              "subheading": "<p>ZAVELE<br/>E-mail: contato@zavele.com.br<br/><br/>Cadastre-se e receba nossas ofertas por e-mail</p>"
+            }
+          }
+        },
+        "block_order": ["footer-0", "footer-1", "footer-2"],
+        "settings": {
+          "show_social_media": true,
+          "show_payment_icons": false,
+          "show_locale_selector": true,
+          "show_currency_selector": true,
+          "show_cookie_bar": false,
+          "accept_button": "Accept"
+        }
+      },
+      "announcement-bar": {
+        "type": "announcement-bar",
+        "settings": {
+          "show_announcement": false,
+          "background": "#0D0D0D",
+          "text_color": "#C9A86C",
+          "text": "FRETE GRÁTIS PARA TODO BRASIL",
+          "text_position": "left",
+          "link": "",
+          "show_newsletter": false
+        }
+      },
+      "slideshow": {
+        "type": "slideshow",
+        "blocks": {
+          "slide-0": {
+            "type": "image",
+            "disabled": true,
+            "settings": {}
+          },
+          "slide-1": {
+            "type": "image",
+            "disabled": true,
+            "settings": {}
+          }
+        },
+        "block_order": ["slide-0", "slide-1"],
+        "settings": {
+          "edge_to_edge": true,
+          "section_size": "preserve_ratio",
+          "carousel_effect": "slide",
+          "autoplay": true,
+          "cycle_speed": 5
+        }
+      },
+      "text-with-icons": {
+        "type": "text-with-icons",
+        "blocks": {
+          "icon-block-0": {
+            "type": "item",
+            "settings": {
+              "icon": "bi-delivery",
+              "title": "Frete Grátis para todo Brasil",
+              "content": "<p>Entregamos para todo o Brasil</p>"
+            }
+          },
+          "icon-block-1": {
+            "type": "item",
+            "settings": {
+              "icon": "bi-returns",
+              "title": "Primeira troca é grátis",
+              "content": "<p>Você tem 7 dias para realizar a troca</p>"
+            }
+          },
+          "icon-block-2": {
+            "type": "item",
+            "settings": {
+              "icon": "bi-customer-support",
+              "title": "Dúvidas ou sugestão",
+              "content": "<p>Entre em contato via WhatsApp</p>"
+            }
+          },
+          "icon-block-3": {
+            "type": "item",
+            "settings": {
+              "icon": "bi-secure-payment",
+              "title": "Compra 100% Segura",
+              "content": "<p>Todos os seus dados estão seguros</p>"
+            }
+          }
+        },
+        "block_order": ["icon-block-0", "icon-block-1", "icon-block-2", "icon-block-3"],
+        "settings": {
+          "show_section": true,
+          "stack_mobile": false
+        }
+      },
+      "product-template": {
+        "type": "product-template",
+        "settings": {
+          "show_vendor": true,
+          "show_sku": false,
+          "show_share_buttons": false,
+          "show_taxes_included": false,
+          "selector_mode": "block",
+          "color_mode": "variant_image",
+          "show_quantity_selector": true,
+          "show_payment_button": false,
+          "image_size": "small",
+          "enable_image_zoom": true,
+          "enable_video_looping": false,
+          "zoom_effect": "outside",
+          "carousel_effect": "fade",
+          "show_inventory_quantity": false,
+          "low_inventory_threshold": 0,
+          "content_display_mode": "show_all_and_expand_description",
+          "enable_reviews": false,
+          "show_reviews_badge": false,
+          "trust_title": "",
+          "show_payment_icons": false,
+          "show_shipping_estimator": false,
+          "shipping_estimator_default_country": "Brazil",
+          "show_refunds_policy": true
+        }
+      },
+      "collection-template": {
+        "type": "collection-template",
+        "settings": {
+          "show_collection_image": true,
+          "collapse_collection_description": false,
+          "collection_image_size": "small",
+          "products_per_row": "4",
+          "default_products_per_page": 48,
+          "default_view_layout": "grid",
+          "show_quick_buy": "list",
+          "show_quick_view": "list",
+          "show_filters": true,
+          "show_filter_color_swatch": true,
+          "filter_type": "tag",
+          "open_group_filters_mode": "all_closed",
+          "filter_group_order": ""
+        }
+      },
+      "cart-template": {
+        "type": "cart-template",
+        "settings": {
+          "enable_order_notes": false,
+          "show_payment_icons": false,
+          "show_shipping_estimator": false,
+          "shipping_estimator_default_country": "Brazil"
+        }
+      },
+      "popups": {
+        "type": "popups",
+        "settings": {}
+      },
+      "product-recommendations": {
+        "type": "product-recommendations",
+        "settings": {
+          "show_product_recommendations": false,
+          "heading": "Você também pode gostar",
+          "show_quick_buy": false
+        }
+      },
+      "recently-viewed-products": {
+        "type": "recently-viewed-products",
+        "settings": {
+          "title": "Vistos recentemente"
+        }
+      },
+      "search-template": {
+        "type": "search-template",
+        "settings": {
+          "products_per_row": "4",
+          "default_view_layout": "grid"
+        }
+      },
+      "static-newsletter": {
+        "type": "static-newsletter",
+        "settings": {
+          "show_section": false,
+          "title": "Assine nossa newsletter",
+          "content": "<p>Receba nossas novidades e promoções exclusivas</p>",
+          "subtext": "100% gratuito, cancele quando quiser!",
+          "background": "#0D0D0D",
+          "text": "#ffffff"
+        }
+      }
+    },
+    "content_for_index": ["slideshow", "text-with-icons"]
+  },
+  "presets": {}
+}

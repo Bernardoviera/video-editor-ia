@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+{% if template contains 'product' %}
+  <div class="sticky_cart">
+    <div class="product-details">
+      <div class="cart-btn animate__animated animate__slow animate__infinite animate__pulse">
+        <button id="btn-sticky-cart" class="btn">COMPRAR AGORA</button>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<style>
+@media screen and (min-width:721px){
+  .sticky_cart {
+    display: none;
+  }
+}
+@media screen and (max-width:720px){
+  .sticky_cart {
+    display: block;
+  }
+}
+.sticky_cart {
+  position: fixed;
+  width: 100%;
+  left: 0;
+  background: #0D0D0D;
+  transition: 0.6s;
+  z-index: 9999999;
+  border-top: 1px solid #C9A86C;
+  padding: 6px 0;
+}
+
+#btn-sticky-cart {
+  background: #C9A86C;
+  color: #0D0D0D;
+  border-radius: 2px;
+  border: none;
+  width: 96%;
+  height: 50px;
+  font-size: 14px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  margin-left: 2%;
+  margin-bottom: 3px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+#btn-sticky-cart:hover {
+  background: #b8934a;
+}
+
+.sticky_cart.show {
+  bottom: 0;
+  transition: 0.4s;
+}
+</style>
+
+<script>
+$(window).scroll(function () {
+  if (document.documentElement.scrollTop > 800) {
+    $(".sticky_cart").addClass("show");
+  } else {
+    $(".sticky_cart").removeClass("show");
+  }
+});
+
+$("#btn-sticky-cart").click(function () {
+  var yampiUrl = window.theme && window.theme.yampiCheckoutUrl;
+  if (yampiUrl && yampiUrl.length > 0) {
+    var variantId = $('[name="id"]').val() || $('[data-variant-id]').data('variant-id');
+    window.location.href = yampiUrl + (variantId ? '?variant=' + variantId : '');
+  } else {
+    $(".paymentButtonsWrapper #AddToCart, form[action='/cart/add'] [type='submit']").first().click();
+  }
+});
+</script>
