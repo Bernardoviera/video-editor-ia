@@ -3,8 +3,8 @@ import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } fr
 import type { TemplateProps } from "../../lib/animationTypes";
 
 export function LabelOverlay({
-  title    = "SUA CLÍNICA PERDE",
-  subtitle = "R$ 15 MIL POR MÊS",
+  title    = "FRASE DE IMPACTO",
+  subtitle = "complemento do que foi dito",
 }: TemplateProps) {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -43,20 +43,21 @@ export function LabelOverlay({
           alignItems: "center",
           justifyContent: "center",
           gap: 10,
-          padding: "0 80px",
+          padding: "0 48px",
         }}
       >
+        {/* Linha 1 — título, branco */}
         <div
           style={{
             fontFamily: "Open Sans, sans-serif",
             fontWeight: 900,
-            fontSize: 26,
-            color: "#F5813F",
+            fontSize: 36,
+            color: "#FFFFFF",
             textTransform: "uppercase",
             textAlign: "center",
-            letterSpacing: "0.04em",
+            letterSpacing: "0.03em",
             lineHeight: 1.25,
-            maxWidth: "80%",
+            maxWidth: "100%",
             wordBreak: "break-word",
             overflowWrap: "break-word",
             opacity: titleOp * exitOp,
@@ -66,15 +67,17 @@ export function LabelOverlay({
         >
           {title}
         </div>
+
+        {/* Linha 2 — subtítulo, vermelho */}
         <div
           style={{
             fontFamily: "Open Sans, sans-serif",
             fontWeight: 900,
-            fontSize: 34,
-            color: "#FFFFFF",
+            fontSize: 48,
+            color: "#E53E3E",
             textAlign: "center",
-            lineHeight: 1.25,
-            maxWidth: "80%",
+            lineHeight: 1.2,
+            maxWidth: "100%",
             wordBreak: "break-word",
             overflowWrap: "break-word",
             opacity: subOp * exitOp,

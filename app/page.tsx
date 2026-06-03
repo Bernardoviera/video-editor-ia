@@ -12,7 +12,6 @@ import {
   Wand2,
   Trash2,
   Plus,
-  RefreshCw,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -36,10 +35,7 @@ import {
 import type {
   AnimationEvent,
   CaptionStyle,
-  TemplateName,
-  TemplateProps,
 } from "@/lib/animationTypes";
-import { TEMPLATE_CATALOG } from "@/lib/animationTypes";
 
 const VideoPreview = dynamic(
   () => import("@/components/VideoPreview").then((m) => m.VideoPreview),
@@ -58,10 +54,6 @@ type Step =
   | "rendering"
   | "done"
   | "error";
-
-const TEMPLATE_LABEL: Record<TemplateName, string> = Object.fromEntries(
-  TEMPLATE_CATALOG.map((t) => [t.name, `${t.icon} ${t.label}`])
-) as Record<TemplateName, string>;
 
 const CAPTION_STYLES: { key: CaptionStyle; label: string; desc: string }[] = [
   { key: "bold",   label: "BOLD",   desc: "ALL CAPS, outline pesado" },
@@ -115,11 +107,11 @@ export default function Home() {
   const [animationEvents, setAnimationEvents] = useState<AnimationEvent[]>([]);
   const [isAnalyzing, setIsAnalyzing]         = useState(false);
   const [analyzeError, setAnalyzeError]       = useState<string | null>(null);
-  const [showAddForm, setShowAddForm]         = useState(false);
-  const [newTemplate, setNewTemplate]         = useState<TemplateName>("DarkReveal");
-  const [newStartTime, setNewStartTime]       = useState(0);
-  const [newDuration, setNewDuration]         = useState(2);
-  const [newProps, setNewProps]               = useState<TemplateProps>({});
+  const [showAddForm, setShowAddForm]   = useState(false);
+  const [newStartTime, setNewStartTime] = useState(0);
+  const [newDuration, setNewDuration]   = useState(2.5);
+  const [newTitle, setNewTitle]         = useState("");
+  const [newSubtitle, setNewSubtitle]   = useState("");
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -189,7 +181,7 @@ export default function Home() {
       const res  = await fetch("/api/analyze", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ segments, userPrompt, captionStyle }),
+        body:    JSON.stringify({ segments, userPrompt }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro na análise.");
@@ -199,7 +191,7 @@ export default function Home() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [segments, userPrompt, captionStyle]);
+  }, [segments, userPrompt]);
 
   // ── event CRUD ───────────────────────────────────────────────────────────────
   const deleteEvent = (id: string) =>
@@ -209,19 +201,19 @@ export default function Home() {
     setAnimationEvents((p) => p.map((e) => (e.id === id ? { ...e, ...patch } : e)));
 
   const addEvent = () => {
-    const defaultProps = TEMPLATE_CATALOG.find((t) => t.name === newTemplate)?.defaultProps ?? {};
     const event: AnimationEvent = {
       id:        `manual-${Date.now()}`,
-      template:  newTemplate,
+      template:  "LabelOverlay",
       startTime: newStartTime,
       duration:  newDuration,
-      props:     { ...defaultProps, ...newProps },
+      props:     { title: newTitle, subtitle: newSubtitle },
     };
     setAnimationEvents((p) =>
       [...p, event].sort((a, b) => a.startTime - b.startTime)
     );
     setShowAddForm(false);
-    setNewProps({});
+    setNewTitle("");
+    setNewSubtitle("");
   };
 
   // ── render ───────────────────────────────────────────────────────────────────
@@ -296,7 +288,7 @@ export default function Home() {
     setRenderProgress(0); setDownloadUrl(null); setErrorMsg(null);
     setAnimationEvents([]); setIsAnalyzing(false); setAnalyzeError(null);
     setUserPrompt(""); setShowAddForm(false);
-    setNewTemplate("DarkReveal"); setNewStartTime(0); setNewDuration(2); setNewProps({});
+    setNewStartTime(0); setNewDuration(2.5); setNewTitle(""); setNewSubtitle("");
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -529,23 +521,28 @@ export default function Home() {
                         className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/4 border border-white/8"
                       >
                         <div className="flex-1 min-w-0 space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-white">
-                              {TEMPLATE_LABEL[event.template]}
-                            </span>
-                            <span className="text-[10px] text-white/40">
-                              {fmtTime(event.startTime)} → {fmtTime(event.startTime + event.duration)}
-                            </span>
-                          </div>
-                          {/* Text prop */}
+                          <span className="text-[10px] text-white/40">
+                            {fmtTime(event.startTime)} → {fmtTime(event.startTime + event.duration)}
+                          </span>
+                          {/* Título — linha branca */}
                           <input
                             type="text"
-                            value={event.props.text ?? ""}
+                            value={event.props.title ?? ""}
                             onChange={(e) =>
-                              updateEvent(event.id, { props: { ...event.props, text: e.target.value } })
+                              updateEvent(event.id, { props: { ...event.props, title: e.target.value } })
                             }
-                            placeholder="Texto principal"
-                            className="w-full px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none focus:border-[#00c4f0]/50"
+                            placeholder="Título (branco, caps)"
+                            className="w-full px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none focus:border-white/30"
+                          />
+                          {/* Subtítulo — linha vermelha */}
+                          <input
+                            type="text"
+                            value={event.props.subtitle ?? ""}
+                            onChange={(e) =>
+                              updateEvent(event.id, { props: { ...event.props, subtitle: e.target.value } })
+                            }
+                            placeholder="Subtítulo (vermelho)"
+                            className="w-full px-2 py-1 rounded-lg bg-white/6 border border-red-500/30 text-xs text-red-300 placeholder-white/25 focus:outline-none focus:border-red-400/50"
                           />
                           <div className="flex items-center gap-2 text-[10px] text-white/40">
                             <label>Início</label>
@@ -564,7 +561,7 @@ export default function Home() {
                               value={event.duration}
                               step={0.5} min={1.5} max={4}
                               onChange={(e) =>
-                                updateEvent(event.id, { duration: parseFloat(e.target.value) || 2 })
+                                updateEvent(event.id, { duration: parseFloat(e.target.value) || 2.5 })
                               }
                               className="w-14 px-1.5 py-0.5 rounded-md bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
                             />
@@ -581,44 +578,40 @@ export default function Home() {
 
                     {/* Add form */}
                     {showAddForm ? (
-                      <div className="p-2.5 rounded-xl bg-white/4 border border-[#00c4f0]/20 space-y-2">
+                      <div className="p-2.5 rounded-xl bg-white/4 border border-white/10 space-y-2">
                         <p className="text-xs font-medium text-white">Nova animação</p>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <select
-                            value={newTemplate}
-                            onChange={(e) => {
-                              const t = e.target.value as TemplateName
-                              setNewTemplate(t)
-                              setNewProps(TEMPLATE_CATALOG.find((c) => c.name === t)?.defaultProps ?? {})
-                            }}
-                            className="px-2 py-1.5 rounded-lg bg-[#0d0d12] border border-white/10 text-xs text-white focus:outline-none col-span-2"
-                          >
-                            {TEMPLATE_CATALOG.map((t) => (
-                              <option key={t.name} value={t.name}>{t.icon} {t.label} — {t.desc}</option>
-                            ))}
-                          </select>
+                        <div className="space-y-1.5">
                           <input
                             type="text"
-                            placeholder="Texto principal"
-                            value={newProps.text ?? ""}
-                            onChange={(e) => setNewProps((p) => ({ ...p, text: e.target.value }))}
-                            className="px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none col-span-2"
+                            placeholder="Título (branco, caps)"
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            className="w-full px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white placeholder-white/25 focus:outline-none"
                           />
-                          <div className="flex items-center gap-1">
-                            <label className="text-[10px] text-white/40 shrink-0">Início (s)</label>
-                            <input
-                              type="number" value={newStartTime} step={0.5} min={0}
-                              onChange={(e) => setNewStartTime(parseFloat(e.target.value) || 0)}
-                              className="flex-1 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
-                            />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <label className="text-[10px] text-white/40 shrink-0">Dur. (s)</label>
-                            <input
-                              type="number" value={newDuration} step={0.5} min={1.5} max={4}
-                              onChange={(e) => setNewDuration(parseFloat(e.target.value) || 2)}
-                              className="flex-1 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
-                            />
+                          <input
+                            type="text"
+                            placeholder="Subtítulo (vermelho)"
+                            value={newSubtitle}
+                            onChange={(e) => setNewSubtitle(e.target.value)}
+                            className="w-full px-2 py-1 rounded-lg bg-white/6 border border-red-500/30 text-xs text-red-300 placeholder-white/25 focus:outline-none"
+                          />
+                          <div className="flex gap-2">
+                            <div className="flex items-center gap-1">
+                              <label className="text-[10px] text-white/40 shrink-0">Início (s)</label>
+                              <input
+                                type="number" value={newStartTime} step={0.5} min={0}
+                                onChange={(e) => setNewStartTime(parseFloat(e.target.value) || 0)}
+                                className="w-16 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <label className="text-[10px] text-white/40 shrink-0">Dur. (s)</label>
+                              <input
+                                type="number" value={newDuration} step={0.5} min={1.5} max={4}
+                                onChange={(e) => setNewDuration(parseFloat(e.target.value) || 2.5)}
+                                className="w-16 px-2 py-1 rounded-lg bg-white/6 border border-white/10 text-xs text-white focus:outline-none"
+                              />
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
