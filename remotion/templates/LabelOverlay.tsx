@@ -9,24 +9,44 @@ export function LabelOverlay({
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
-  const s = spring({ frame, fps, config: { damping: 15, stiffness: 100, mass: 1 } });
+  // Overlay dims in first — heavier damping, no overshoot
+  const overlayS = spring({ frame, fps, config: { damping: 22, stiffness: 160, mass: 1 } });
 
-  const translateY = interpolate(s, [0, 1], [60, 0]);
-  const opacity    = interpolate(s, [0, 1], [0, 1]);
+  // Title enters frame 0 — Jakub recipe: opacity + translateY + blur
+  const titleS = spring({ frame, fps, config: { damping: 14, stiffness: 88, mass: 1.1 } });
 
-  const fadeOut = interpolate(
+  // Subtitle staggered 7 frames behind title
+  const subS = spring({
+    frame: Math.max(0, frame - 7),
+    fps,
+    config: { damping: 14, stiffness: 88, mass: 1.1 },
+  });
+
+  const titleY    = interpolate(titleS, [0, 1], [44, 0]);
+  const titleOp   = interpolate(titleS, [0, 1], [0, 1]);
+  const titleBlur = interpolate(titleS, [0, 1], [10, 0]);
+
+  const subY    = interpolate(subS, [0, 1], [44, 0]);
+  const subOp   = interpolate(subS, [0, 1], [0, 1]);
+  const subBlur = interpolate(subS, [0, 1], [10, 0]);
+
+  // Exit: subtler than enter (Jakub) — slight lift + blur, no full-height translate
+  const exit = interpolate(
     frame,
-    [durationInFrames - 8, durationInFrames],
+    [durationInFrames - 10, durationInFrames],
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
+  const exitOp   = 1 - exit;
+  const exitY    = interpolate(exit, [0, 1], [0, -14]);
+  const exitBlur = interpolate(exit, [0, 1], [0, 7]);
+
+  const overlayOp = interpolate(overlayS, [0, 1], [0, 0.38]) * exitOp;
 
   return (
-    <AbsoluteFill style={{ opacity: 1 - fadeOut }}>
-      {/* Dim overlay */}
-      <AbsoluteFill style={{ background: "rgba(0,0,0,0.35)" }} />
+    <AbsoluteFill>
+      <AbsoluteFill style={{ background: `rgba(0,0,0,${overlayOp})` }} />
 
-      {/* Text block — center-bottom */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -35,10 +55,9 @@ export function LabelOverlay({
           justifyContent: "flex-end",
           paddingBottom: 220,
           gap: 8,
-          transform: `translateY(${translateY}px)`,
-          opacity,
         }}
       >
+        {/* Title — enters first */}
         <div
           style={{
             fontFamily: "Open Sans, sans-serif",
@@ -48,13 +67,18 @@ export function LabelOverlay({
             textTransform: "uppercase",
             textAlign: "center",
             letterSpacing: "0.04em",
-            textShadow: "0 2px 12px rgba(0,0,0,0.8)",
             lineHeight: 1.15,
             padding: "0 40px",
+            textShadow: "0 2px 16px rgba(0,0,0,0.85)",
+            opacity: titleOp * exitOp,
+            transform: `translateY(${titleY + exitY}px)`,
+            filter: `blur(${titleBlur + exitBlur}px)`,
           }}
         >
           {title}
         </div>
+
+        {/* Subtitle — staggered behind */}
         <div
           style={{
             fontFamily: "Open Sans, sans-serif",
@@ -62,9 +86,12 @@ export function LabelOverlay({
             fontSize: 42,
             color: "#FFFFFF",
             textAlign: "center",
-            textShadow: "0 2px 16px rgba(0,0,0,0.9)",
             lineHeight: 1.15,
             padding: "0 40px",
+            textShadow: "0 2px 20px rgba(0,0,0,0.9)",
+            opacity: subOp * exitOp,
+            transform: `translateY(${subY + exitY}px)`,
+            filter: `blur(${subBlur + exitBlur}px)`,
           }}
         >
           {subtitle}
