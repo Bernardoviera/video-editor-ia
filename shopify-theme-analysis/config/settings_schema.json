@@ -1,9 +1,9 @@
 [
   {
     "name": "theme_info",
-    "theme_name": "Warehouse - Zavele Edition",
-    "theme_author": "Zavele",
-    "theme_version": "2.0.0",
+    "theme_name": "Warehouse",
+    "theme_author": "Maestrooo",
+    "theme_version": "1.13.0",
     "theme_documentation_url": "http://support.maestrooo.com/",
     "theme_support_url": "https://support.maestrooo.com/article/203-contact-us"
   },
@@ -425,12 +425,14 @@
         "label": "Empty button link",
         "default": "/collections/all"
       },
+       
       {
         "type": "checkbox",
         "id": "cart_show_checkout_button",
         "label": "Show checkout button in drawer",
         "default": true
       },
+      
       {
         "type": "checkbox",
         "id": "cart_show_free_shipping_threshold",
@@ -513,51 +515,6 @@
         "id": "social_fancy",
         "info": "https://fancy.com/Shopify",
         "label": "Fancy"
-      }
-    ]
-  },
-  {
-    "name": "Integrações",
-    "settings": [
-      {
-        "type": "header",
-        "content": "Facebook Pixel"
-      },
-      {
-        "type": "text",
-        "id": "id_pixel",
-        "label": "ID do Facebook Pixel",
-        "info": "Cole aqui o ID do seu pixel (apenas os números, ex: 123456789012345)"
-      },
-      {
-        "type": "header",
-        "content": "Google Tag Manager"
-      },
-      {
-        "type": "text",
-        "id": "gtm_id",
-        "label": "ID do GTM",
-        "info": "Cole aqui o ID do GTM (ex: GTM-XXXXXXX)"
-      },
-      {
-        "type": "header",
-        "content": "Microsoft Clarity"
-      },
-      {
-        "type": "text",
-        "id": "clarity_id",
-        "label": "ID do Microsoft Clarity",
-        "info": "Cole aqui o ID do Clarity (ex: abc123def4)"
-      },
-      {
-        "type": "header",
-        "content": "Yampi Checkout"
-      },
-      {
-        "type": "text",
-        "id": "yampi_checkout_url",
-        "label": "URL base do checkout Yampi",
-        "info": "Cole a URL base do checkout Yampi (ex: https://subalias.yampi.com.br/checkout)"
       }
     ]
   },
