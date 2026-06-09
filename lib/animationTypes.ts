@@ -22,6 +22,7 @@ export interface TemplateProps {
   glitchColor?:   string
   popColor?:      string
   staggerDelay?:  number
+  highlightWords?: number[]   // índices das palavras do subtítulo a destacar em vermelho
   direction?:     'left' | 'right' | 'top' | 'bottom'
   blur?:          number
   startTracking?: number
