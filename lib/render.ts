@@ -82,6 +82,7 @@ async function renderRemotionOverlay(options: {
     },
     serveUrl: bundleLocation,
     codec: 'vp9',
+    imageFormat: 'png',
     pixelFormat: 'yuva420p',
     outputLocation: options.overlayPath,
     inputProps,

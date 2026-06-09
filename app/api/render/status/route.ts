@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ status: "error", error: "jobId ausente." }, { status: 400 });
   }
 
+  console.log(`[render/status] Buscando job: ${jobId}, jobs existentes: ${[...jobs.keys()]}`);
   const job = jobs.get(jobId);
   if (!job) {
     return NextResponse.json({ status: "error", error: "Job não encontrado." });

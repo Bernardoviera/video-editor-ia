@@ -59,7 +59,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erro ao salvar arquivo." }, { status: 500 });
   }
 
+  console.log(`[render] Criando job. Map ref: ${jobs}, size antes: ${jobs.size}`);
   jobs.set(jobId, { status: "processing", createdAt: Date.now() });
+  console.log(`[render] Job criado: ${jobId}, jobs existentes: ${[...jobs.keys()]}`);
 
   renderVideo({
     inputPath: tmpInput,
@@ -75,9 +77,10 @@ export async function POST(req: NextRequest) {
       jobs.set(jobId, { status: "done", filePath, createdAt: Date.now() });
     })
     .catch((err) => {
+      console.error('[render] RENDER CRASH:', err);
       jobs.set(jobId, {
         status: "error",
-        error: err instanceof Error ? err.message : "Erro desconhecido.",
+        error: err instanceof Error ? err.message : String(err),
         createdAt: Date.now(),
       });
     })
