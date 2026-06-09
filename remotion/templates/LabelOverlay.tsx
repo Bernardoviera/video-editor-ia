@@ -15,17 +15,8 @@ const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
 });
 
-// Chars usados no efeito de decrypt (embaralhamento antes de revelar)
-const DECRYPT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
-
-// Gera um char pseudo-aleatório baseado em frame + posição (determinístico para render)
-function pseudoChar(frame: number, index: number): string {
-  const seed = (frame * 7 + index * 13) % DECRYPT_CHARS.length;
-  return DECRYPT_CHARS[seed];
-}
-
-// Cada char do título passa por: scramble → reveal
-function DecryptChar({
+// Cada char do título entra com scale + opacity + blur (sem scramble)
+function TitleChar({
   char,
   frame,
   fps,
@@ -36,28 +27,26 @@ function DecryptChar({
   fps: number;
   delay: number;
 }) {
-  if (char === " ") return <span style={{ display: "inline-block", width: "0.3em" }} />;
+  if (char === " ") return <span style={{ display: "inline-block", width: "0.28em" }} />;
 
-  const localFrame = Math.max(0, frame - delay);
-  // Duração do scramble: ~6 frames, depois revela
-  const scrambleDuration = 6;
-  const isRevealed = localFrame >= scrambleDuration;
-
-  const revealProgress = spring({
-    frame: Math.max(0, localFrame - scrambleDuration),
+  const s = spring({
+    frame: Math.max(0, frame - delay),
     fps,
-    config: { damping: 16, stiffness: 200, mass: 0.8 },
+    config: { damping: 14, stiffness: 220, mass: 0.7 },
   });
 
-  const opacity = isRevealed
-    ? interpolate(revealProgress, [0, 1], [0.4, 1], { extrapolateRight: "clamp" })
-    : interpolate(localFrame, [0, scrambleDuration], [0, 0.5], { extrapolateRight: "clamp" });
-
-  const scale = isRevealed
-    ? interpolate(revealProgress, [0, 1], [1.3, 1], { extrapolateRight: "clamp" })
-    : 1;
-
-  const displayChar = isRevealed ? char : pseudoChar(frame, delay);
+  const scale = interpolate(s, [0, 1], [0.4, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const opacity = interpolate(s, [0, 0.4], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const blur = interpolate(s, [0, 0.6], [10, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <span
@@ -65,12 +54,12 @@ function DecryptChar({
         display: "inline-block",
         opacity,
         transform: `scale(${scale})`,
+        filter: `blur(${blur}px)`,
         transformOrigin: "center bottom",
-        color: isRevealed ? "#E53E3E" : "rgba(229,62,62,0.4)",
-        transition: "none",
+        color: "#E53E3E",
       }}
     >
-      {displayChar}
+      {char}
     </span>
   );
 }
@@ -119,7 +108,7 @@ function SubWord({
   );
 }
 
-// Ícone ✦ que pulsa antes do título aparecer
+// Ícone ✦ que pulsa antes do título
 function IconSpark({ frame, fps }: { frame: number; fps: number }) {
   const appear = spring({
     frame,
@@ -127,11 +116,10 @@ function IconSpark({ frame, fps }: { frame: number; fps: number }) {
     config: { damping: 10, stiffness: 180, mass: 0.7 },
   });
 
-  // pulso sutil contínuo depois de aparecer (oscilação lenta)
   const pulse = interpolate(
     Math.sin((frame / fps) * Math.PI * 2.2),
     [-1, 1],
-    [0.85, 1.0]
+    [0.88, 1.0]
   );
 
   const scale = interpolate(appear, [0, 1], [0, 1], { extrapolateRight: "clamp" }) * pulse;
@@ -141,11 +129,11 @@ function IconSpark({ frame, fps }: { frame: number; fps: number }) {
     <div
       style={{
         fontFamily,
-        fontSize: 22,
+        fontSize: 20,
         color: "#E53E3E",
         opacity,
         transform: `scale(${scale})`,
-        marginBottom: 16,
+        marginBottom: 18,
         letterSpacing: "0.5em",
         display: "flex",
         gap: 8,
@@ -168,12 +156,9 @@ export function LabelOverlay({
   const { fps, durationInFrames } = useVideoConfig();
 
   const titleChars = title.toUpperCase().split("");
-  // Stagger de 2 frames por char
   const CHAR_STAGGER = 2;
-  // Ícone aparece no frame 0, título começa no frame 5
   const TITLE_START = 5;
-  // Subtítulo começa após todos os chars do título terem revelado + margem
-  const titleEnd = TITLE_START + titleChars.length * CHAR_STAGGER + 8;
+  const titleEnd = TITLE_START + titleChars.length * CHAR_STAGGER + 10;
   const subtitleWords = subtitle.split(" ");
   const WORD_STAGGER = 5;
 
@@ -225,7 +210,7 @@ export function LabelOverlay({
         {/* Ícone ✦ ✦ ✦ */}
         <IconSpark frame={frame} fps={fps} />
 
-        {/* Título — decrypt char por char */}
+        {/* Título — char por char com scale + blur */}
         <div
           style={{
             display: "flex",
@@ -241,7 +226,7 @@ export function LabelOverlay({
           }}
         >
           {titleChars.map((char, i) => (
-            <DecryptChar
+            <TitleChar
               key={i}
               char={char}
               frame={frame}
