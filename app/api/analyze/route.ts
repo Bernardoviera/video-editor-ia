@@ -8,6 +8,7 @@ const VALID_TEMPLATES: TemplateName[] = [
   "NeonGlow",
   "MatrixDecode",
   "GradientFill",
+  "TerminalCode",
 ];
 
 export async function POST(req: NextRequest) {
@@ -38,6 +39,7 @@ Para CADA momento você também escolhe o ESTILO de animação que combina com o
 - "NeonGlow": neon ciano/rosa brilhante. Use em momentos de HYPE, energia, empolgação, hype de produto.
 - "MatrixDecode": texto verde que decodifica (hacker). Use em TECNOLOGIA, dados, números, revelações, "segredos".
 - "GradientFill": gradiente colorido fluido (premium). Use em momentos EMOCIONAIS, aspiracionais, sofisticados.
+- "TerminalCode": janela de terminal macOS digitando um comando e sua saída. Use quando o conteúdo for CÓDIGO, COMANDOS, programação, dev, ferramentas técnicas. Neste caso "title" = o comando (ex: "npm run build"), "subtitle" = a saída/resultado.
 
 Para cada momento, retorne um objeto com:
 - "template": um dos 5 valores acima, escolhido pelo tom

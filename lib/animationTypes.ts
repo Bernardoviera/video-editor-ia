@@ -6,6 +6,7 @@ export type TemplateName =
   | 'NeonGlow'       // neon ciano/rosa, hype/energia
   | 'MatrixDecode'   // decode verde estilo hacker, tecnologia/revelação
   | 'GradientFill'   // gradiente Siri, premium/emocional
+  | 'TerminalCode'   // terminal macOS digitando, código/tech/dev
 
 export const SUBTITLE_SUPPRESS_TEMPLATES: TemplateName[] = []
 
@@ -67,5 +68,12 @@ export const TEMPLATE_CATALOG: TemplateInfo[] = [
     icon:         '🌈',
     desc:         'Gradiente Siri varrendo o texto (Montserrat). Premium/emocional.',
     defaultProps: { title: '', subtitle: 'momento premium' },
+  },
+  {
+    name:         'TerminalCode',
+    label:        'Terminal Code',
+    icon:         '🖥️',
+    desc:         'Janela de terminal macOS digitando linha a linha (JetBrains Mono). Código/tech/dev.',
+    defaultProps: { title: 'npm run build', subtitle: 'Build concluído com sucesso' },
   },
 ]
