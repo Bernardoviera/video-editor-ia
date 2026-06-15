@@ -12,41 +12,83 @@ import {
 import type { TemplateProps } from "../../lib/animationTypes";
 
 const { fontFamily } = loadFont("normal", {
-  weights: ["700", "800"],
+  weights: ["300", "700", "800"],
   subsets: ["latin"],
 });
 
-// ─── Configurações de spring estilo Remotion oficial ──────────────────────────
-// damping alto = sem bounce, movimento limpo de vídeo profissional
-const SPR_TITLE = { damping: 120, stiffness: 200, mass: 1 };
-const SPR_SUB   = { damping: 100, stiffness: 160, mass: 1 };
-const SPR_ICON  = { damping: 200, stiffness: 300, mass: 0.8 };
+// ─── Técnica 1: KINETIC SLAM ──────────────────────────────────────────────────
+// Inspirado em caption-kinetic-slam do HyperFrames
+// Cada palavra entra com um padrão de entrada diferente, ciclando entre 4 tipos
+type SlamType = "top" | "left" | "right" | "scale";
 
-// ─── Componentes ──────────────────────────────────────────────────────────────
+function getSlamType(index: number): SlamType {
+  const types: SlamType[] = ["top", "left", "right", "scale"];
+  return types[index % 4];
+}
 
-function TitleWord({ word, color = "#E53E3E" }: { word: string; color?: string }) {
+function TitleWord({
+  word,
+  index,
+  highlight,
+}: {
+  word: string;
+  index: number;
+  highlight: boolean;
+}) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const slam = getSlamType(index);
 
-  const s = spring({ frame, fps, config: SPR_TITLE, durationInFrames: 20 });
+  // spring com back.out equivalente — ligeiro overshoot inicial controlado
+  const spr = spring({
+    frame,
+    fps,
+    config: { damping: 18, stiffness: 280, mass: 0.6 },
+    durationInFrames: 18,
+  });
 
-  const y       = interpolate(s, [0, 1], [52, 0],  { extrapolateRight: "clamp" });
-  const opacity = interpolate(s, [0, 0.3], [0, 1], { extrapolateRight: "clamp" });
+  // saída rápida
+  const exit = spring({
+    frame,
+    fps,
+    config: { damping: 80, stiffness: 200 },
+    durationInFrames: 10,
+    from: 0,
+    to: 1,
+  });
+
+  let transformIn = "";
+  switch (slam) {
+    case "top":
+      transformIn = `translateY(${interpolate(spr, [0, 1], [-80, 0], { extrapolateRight: "clamp" })}px)`;
+      break;
+    case "left":
+      transformIn = `translateX(${interpolate(spr, [0, 1], [-60, 0], { extrapolateRight: "clamp" })}px)`;
+      break;
+    case "right":
+      transformIn = `translateX(${interpolate(spr, [0, 1], [60, 0], { extrapolateRight: "clamp" })}px)`;
+      break;
+    case "scale":
+      transformIn = `scale(${interpolate(spr, [0, 1], [0.3, 1], { extrapolateRight: "clamp" })})`;
+      break;
+  }
+
+  const opacity = interpolate(spr, [0, 0.2], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <span
       style={{
         display: "inline-block",
-        transform: `translateY(${y}px)`,
+        transform: transformIn,
         opacity,
-        color,
+        color: highlight ? "#E53E3E" : "#FFFFFF",
         fontFamily,
         fontWeight: 800,
-        fontSize: 42,
-        letterSpacing: "3px",
+        fontSize: 64,
+        letterSpacing: "-1px",
         textTransform: "uppercase",
-        marginRight: "0.25em",
-        lineHeight: 1.2,
+        marginRight: "0.18em",
+        lineHeight: 1.1,
         willChange: "transform, opacity",
       }}
     >
@@ -55,74 +97,85 @@ function TitleWord({ word, color = "#E53E3E" }: { word: string; color?: string }
   );
 }
 
-function SubtitleWord({
-  word,
-  color = "#FFFFFF",
+// ─── Técnica 2: WEIGHT SHIFT ──────────────────────────────────────────────────
+// Inspirado em caption-weight-shift do HyperFrames
+// A primeira linha começa bold e vai ficando light conforme a segunda linha entra
+function SubtitleLine({
+  words,
+  isFirstLine,
+  secondLineProgress,
+  highlightIndices,
+  wordOffset,
 }: {
-  word: string;
-  color?: string;
+  words: string[];
+  isFirstLine: boolean;
+  secondLineProgress: number;
+  highlightIndices: number[];
+  wordOffset: number;
 }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const s = spring({ frame, fps, config: SPR_SUB, durationInFrames: 22 });
+  const lineIn = spring({
+    frame,
+    fps,
+    config: { damping: 100, stiffness: 180 },
+    durationInFrames: 20,
+  });
 
-  const y       = interpolate(s, [0, 1], [36, 0],  { extrapolateRight: "clamp" });
-  const opacity = interpolate(s, [0, 0.25], [0, 1], { extrapolateRight: "clamp" });
-  const blur    = interpolate(s, [0, 0.4], [6, 0],  { extrapolateRight: "clamp" });
+  const y       = interpolate(lineIn, [0, 1], [40, 0],  { extrapolateRight: "clamp" });
+  const opacity = interpolate(lineIn, [0, 0.3], [0, 1], { extrapolateRight: "clamp" });
+
+  // weight shift: primeira linha vai de 800→300 conforme segunda entra
+  const fontWeight = isFirstLine
+    ? Math.round(interpolate(secondLineProgress, [0, 1], [800, 300], { extrapolateRight: "clamp" }))
+    : 800;
 
   return (
-    <span
+    <div
       style={{
-        display: "inline-block",
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "center",
         transform: `translateY(${y}px)`,
         opacity,
-        filter: `blur(${blur}px)`,
-        color,
-        fontFamily,
-        fontWeight: 800,
-        fontSize: 56,
-        lineHeight: 1.2,
-        marginRight: "0.22em",
-        willChange: "transform, opacity, filter",
-      }}
-    >
-      {word}
-    </span>
-  );
-}
-
-function Spark({ index }: { index: number }) {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const s = spring({ frame, fps, config: SPR_ICON, durationInFrames: 12 });
-
-  // pulso contínuo sutil após entrada
-  const pulse   = interpolate(Math.sin((frame / fps) * Math.PI * 2.4), [-1, 1], [0.9, 1.0]);
-  const scale   = interpolate(s, [0, 1], [0, 1], { extrapolateRight: "clamp" }) * pulse;
-  const opacity = interpolate(s, [0, 0.5], [0, 1], { extrapolateRight: "clamp" });
-
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        fontSize: 18,
-        color: "#E53E3E",
-        transform: `scale(${scale})`,
-        opacity,
-        marginRight: index < 2 ? 10 : 0,
         willChange: "transform, opacity",
       }}
     >
-      ✦
-    </span>
+      {words.map((word, i) => {
+        const globalIdx = wordOffset + i;
+        const isHighlight = highlightIndices.includes(globalIdx);
+        return (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              fontFamily,
+              fontWeight,
+              fontSize: 56,
+              lineHeight: 1.2,
+              color: isHighlight ? "#E53E3E" : "#FFFFFF",
+              marginRight: "0.22em",
+              transition: "none",
+              willChange: "font-weight",
+            }}
+          >
+            {word}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
+// ─── Técnica 3: MORPH EXIT ────────────────────────────────────────────────────
+// Inspirado em morph-text do HyperFrames
+// Saída com blur crescente + opacity caindo — efeito "dissolve morph"
+
 // ─── Composição principal ─────────────────────────────────────────────────────
 
-const WORD_STAGGER = 4; // frames entre cada palavra/char
+const WORD_STAGGER  = 5;   // frames entre palavras do título
+const TITLE_START   = 4;   // frame em que o título começa
 
 export function LabelOverlay({
   title          = "FRASE DE IMPACTO",
@@ -135,34 +188,40 @@ export function LabelOverlay({
   const titleWords    = title.split(" ");
   const subtitleWords = subtitle.split(" ");
 
-  // Ícones: frame 0
-  // Título: cada palavra começa em ICON_DUR + i * WORD_STAGGER
-  const ICON_DUR  = 8;
-  const TITLE_DUR = ICON_DUR + titleWords.length * WORD_STAGGER + 12;
+  // Divide subtítulo em duas linhas (metade cada)
+  const midpoint     = Math.ceil(subtitleWords.length / 2);
+  const line1        = subtitleWords.slice(0, midpoint);
+  const line2        = subtitleWords.slice(midpoint);
 
-  // ── Saída global ────────────────────────────────────────────────────────────
-  const exitProgress = interpolate(
-    frame,
-    [durationInFrames - 12, durationInFrames],
-    [0, 1],
-    {
-      easing: Easing.in(Easing.cubic),
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }
-  );
-  const exitOpacity   = 1 - exitProgress;
-  const exitTranslate = interpolate(exitProgress, [0, 1], [0, -24]);
-  const exitBlur      = interpolate(exitProgress, [0, 1], [0, 10]);
+  const titleEnd     = TITLE_START + titleWords.length * WORD_STAGGER + 8;
+  const line2Start   = titleEnd + 18; // quando linha 2 começa
+
+  // progresso da entrada da linha 2 (para o weight shift da linha 1)
+  const line2Progress = spring({
+    frame: Math.max(0, frame - line2Start),
+    fps,
+    config: { damping: 100, stiffness: 180 },
+    durationInFrames: 20,
+  });
+
+  // ── Saída morph: blur + opacity (técnica morph-text HyperFrames) ────────────
+  const exitStart = durationInFrames - 14;
+  const exitProg  = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
+    easing: Easing.bezier(0.4, 0, 1, 1),
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const exitOpacity   = 1 - exitProg;
+  const exitBlur      = interpolate(exitProg, [0, 1], [0, 18], { extrapolateRight: "clamp" });
+  const exitScale     = interpolate(exitProg, [0, 1], [1, 1.06], { extrapolateRight: "clamp" });
 
   return (
     <AbsoluteFill style={{ background: "#000000", overflow: "hidden" }}>
 
-      {/* Vignette cinematográfico */}
+      {/* Vignette */}
       <AbsoluteFill
         style={{
-          background:
-            "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.85) 100%)",
+          background: "radial-gradient(ellipse at center, transparent 25%, rgba(0,0,0,0.9) 100%)",
           pointerEvents: "none",
         }}
       />
@@ -178,84 +237,66 @@ export function LabelOverlay({
         }}
       />
 
-      {/* Conteúdo — wrapper com saída global */}
+      {/* Wrapper com saída morph global */}
       <AbsoluteFill
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "0 60px",
-          gap: 0,
+          padding: "0 64px",
+          gap: 16,
           opacity: exitOpacity,
-          transform: `translateY(${exitTranslate}px)`,
           filter: `blur(${exitBlur}px)`,
+          transform: `scale(${exitScale})`,
+          willChange: "opacity, filter, transform",
         }}
       >
 
-        {/* ── Ícones ✦ ✦ ✦ ─────────────────────────────────────── */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
-          {[0, 1, 2].map((i) => (
-            <Sequence key={i} from={i * 3} layout="none">
-              <Spark index={i} />
-            </Sequence>
-          ))}
-        </div>
-
-        {/* ── Título — palavra por palavra ────────────────────────── */}
+        {/* ── Título: kinetic slam palavra por palavra ─── */}
         <div
           style={{
             display: "flex",
             flexWrap: "wrap",
             justifyContent: "center",
-            alignItems: "flex-end",
-            overflow: "hidden",
-            marginBottom: 22,
+            alignItems: "center",
             maxWidth: "100%",
           }}
         >
           {titleWords.map((word, i) => (
-            <Sequence
-              key={i}
-              from={ICON_DUR + i * WORD_STAGGER}
-              layout="none"
-            >
-              <TitleWord word={word} />
-            </Sequence>
-          ))}
-        </div>
-
-        {/* ── Subtítulo — palavra por palavra ─────────────────────── */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            alignItems: "flex-end",
-            maxWidth: "100%",
-          }}
-        >
-          {subtitleWords.map((word, i) => (
-            <Sequence
-              key={i}
-              from={TITLE_DUR + i * WORD_STAGGER}
-              layout="none"
-            >
-              <SubtitleWord
+            <Sequence key={i} from={TITLE_START + i * WORD_STAGGER} layout="none">
+              <TitleWord
                 word={word}
-                color={
-                  (highlightWords ?? []).includes(i) ? "#E53E3E" : "#FFFFFF"
-                }
+                index={i}
+                highlight={(highlightWords ?? []).includes(i)}
               />
             </Sequence>
           ))}
         </div>
+
+        {/* ── Subtítulo linha 1: weight shift ─── */}
+        <Sequence from={titleEnd} layout="none">
+          <SubtitleLine
+            words={line1}
+            isFirstLine
+            secondLineProgress={line2Progress}
+            highlightIndices={highlightWords ?? []}
+            wordOffset={0}
+          />
+        </Sequence>
+
+        {/* ── Subtítulo linha 2: entra depois, bold ─── */}
+        {line2.length > 0 && (
+          <Sequence from={line2Start} layout="none">
+            <SubtitleLine
+              words={line2}
+              isFirstLine={false}
+              secondLineProgress={0}
+              highlightIndices={highlightWords ?? []}
+              wordOffset={midpoint}
+            />
+          </Sequence>
+        )}
 
       </AbsoluteFill>
     </AbsoluteFill>

@@ -5,33 +5,9 @@ export type TemplateName = 'LabelOverlay'
 export const SUBTITLE_SUPPRESS_TEMPLATES: TemplateName[] = []
 
 export interface TemplateProps {
-  title?:         string
-  subtitle?:      string
-  // props of legacy templates (files kept on disk, not exposed in UI)
-  text?:          string
-  accentColor?:   string
-  color?:         string
-  fontSize?:      number
-  value?:         string
-  category?:      string
-  context?:       string
-  icon?:          string
-  label?:         string
-  accent?:        string
-  lineColor?:     string
-  glitchColor?:   string
-  popColor?:      string
-  staggerDelay?:  number
-  highlightWords?: number[]   // índices das palavras do subtítulo a destacar em vermelho
-  direction?:     'left' | 'right' | 'top' | 'bottom'
-  blur?:          number
-  startTracking?: number
-  baseColor?:     string
-  shineColor?:    string
-  fillColor?:     string
-  waveSpeed?:     number
-  body?:          string
-  cardPosition?:  'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'
+  title?:          string
+  subtitle?:       string
+  highlightWords?: number[]  // índices das palavras do subtítulo a destacar em vermelho
 }
 
 export interface AnimationEvent {
@@ -55,7 +31,7 @@ export const TEMPLATE_CATALOG: TemplateInfo[] = [
     name:         'LabelOverlay',
     label:        'Label Overlay',
     icon:         '🏷️',
-    desc:         'Título branco + subtítulo vermelho com spring',
+    desc:         'Kinetic typography — palavras entram com slam, weight shift e morph',
     defaultProps: { title: 'FRASE DE IMPACTO', subtitle: 'complemento do que foi dito' },
   },
 ]
