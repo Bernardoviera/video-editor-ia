@@ -17,7 +17,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 4. **Delays por subtração de frame.** Para atrasar uma animação N frames: `spring({ frame: Math.max(0, frame - N), fps, config })`. Nunca use async/await para delay.
 
-5. **Fontes via `@remotion/google-fonts`.** Use `loadFont()` do pacote correto (ex: `@remotion/google-fonts/Inter`). Font weight 900 não existe no Inter — use 700 ou 800.
+5. **Fontes via `@remotion/google-fonts`.** Use `loadFont()` do pacote correto. O `LabelOverlay` usa **Anton** (`@remotion/google-fonts/Anton`, só peso 400) — fonte display condensada do estilo kinetic-slam. Para texto corrido use Inter (700/800; peso 900 não existe no Inter).
 
 6. **`imageFormat: 'png'` obrigatório com `pixelFormat: 'yuva420p'`** (transparência). Sem isso a exportação quebra.
 
@@ -33,8 +33,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Templates em `remotion/templates/` — cada arquivo exporta uma função React
 - Tipos em `lib/animationTypes.ts` — sempre atualizar `TemplateProps` ao adicionar props
-- Identidade visual: fundo `#000000`, destaque `#E53E3E`, texto `#FFFFFF`, fonte Inter 700/800
-- Templates ativos: `LabelOverlay` (principal), `StatCard`, `MoneyCard`
+- Identidade visual do `LabelOverlay` (estilo kinetic-slam, baseado no HyperFrames): fundo `#000000`, texto `#FFFFFF`, destaque dourado `#FFD700`, fonte Anton uppercase. Uma palavra gigante por vez, centralizada, com 4 modos de entrada alternados (cima/esquerda/direita/zoom) e overshoot.
+- Templates ativos: `LabelOverlay` (único)
 
 ## Antes de escrever código Remotion
 

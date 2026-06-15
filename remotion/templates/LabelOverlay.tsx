@@ -1,5 +1,5 @@
-import React from "react";
-import { loadFont } from "@remotion/google-fonts/Inter";
+import React, { useMemo } from "react";
+import { loadFont } from "@remotion/google-fonts/Anton";
 import {
   AbsoluteFill,
   Easing,
@@ -11,293 +11,169 @@ import {
 } from "remotion";
 import type { TemplateProps } from "../../lib/animationTypes";
 
+// Anton: fonte display condensada usada no kinetic-slam do HyperFrames.
+// Só existe no peso 400.
 const { fontFamily } = loadFont("normal", {
-  weights: ["300", "700", "800"],
+  weights: ["400"],
   subsets: ["latin"],
 });
 
-// ─── Técnica 1: KINETIC SLAM ──────────────────────────────────────────────────
-// Inspirado em caption-kinetic-slam do HyperFrames
-// Cada palavra entra com um padrão de entrada diferente, ciclando entre 4 tipos
-type SlamType = "top" | "left" | "right" | "scale";
+// ─── KINETIC SLAM ─────────────────────────────────────────────────────────────
+// Porta fiel do caption-kinetic-slam (HyperFrames) para o sistema de frames do
+// Remotion. Uma palavra gigante por vez, centralizada, com 4 modos de entrada
+// alternados (cima / esquerda / direita / zoom), cada um com overshoot.
 
-function getSlamType(index: number): SlamType {
-  const types: SlamType[] = ["top", "left", "right", "scale"];
-  return types[index % 4];
+type SlamMode = 0 | 1 | 2 | 3;
+
+function fitFontSize(word: string, maxWidth: number, base: number): number {
+  // Anton é condensada: largura média por caractere ~= 0.46 * fontSize.
+  // Heurística determinística (sem canvas) para caber na largura segura.
+  const perChar = 0.46;
+  const needed = maxWidth / Math.max(1, word.length * perChar);
+  return Math.max(Math.floor(base * 0.45), Math.min(base, Math.floor(needed)));
 }
 
-function TitleWord({
+function SlamWord({
   word,
-  index,
-  highlight,
+  mode,
+  slotFrames,
+  fontSize,
+  color,
 }: {
   word: string;
-  index: number;
-  highlight: boolean;
+  mode: SlamMode;
+  slotFrames: number;
+  fontSize: number;
+  color: string;
 }) {
-  const frame = useCurrentFrame();
+  const frame = useCurrentFrame(); // local à Sequence (começa em 0)
   const { fps } = useVideoConfig();
-  const slam = getSlamType(index);
 
-  // spring com back.out equivalente — ligeiro overshoot inicial controlado
-  const spr = spring({
+  // Entrada com overshoot (equivalente a back.out do GSAP)
+  const enter = spring({
     frame,
     fps,
-    config: { damping: 18, stiffness: 280, mass: 0.6 },
-    durationInFrames: 18,
+    config: { damping: 11, stiffness: 220, mass: 0.6 },
+    durationInFrames: 8,
   });
 
-  // saída rápida
-  const exit = spring({
-    frame,
-    fps,
-    config: { damping: 80, stiffness: 200 },
-    durationInFrames: 10,
-    from: 0,
-    to: 1,
+  // Entrada suave para os modos laterais (equivalente a expo.out)
+  const slide = interpolate(frame, [0, 6], [0, 1], {
+    easing: Easing.out(Easing.exp),
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
   });
 
-  let transformIn = "";
-  switch (slam) {
-    case "top":
-      transformIn = `translateY(${interpolate(spr, [0, 1], [-80, 0], { extrapolateRight: "clamp" })}px)`;
+  // Saída: fade rápido nos últimos frames do slot
+  const exitStart = slotFrames - 4;
+  const exit = interpolate(frame, [exitStart, slotFrames - 1], [1, 0], {
+    easing: Easing.in(Easing.quad),
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  let transform = "translateY(-50%)";
+  switch (mode) {
+    case 0: // de cima
+      transform = `translateY(calc(-50% + ${interpolate(enter, [0, 1], [-120, 0])}px))`;
       break;
-    case "left":
-      transformIn = `translateX(${interpolate(spr, [0, 1], [-60, 0], { extrapolateRight: "clamp" })}px)`;
+    case 1: // da esquerda
+      transform = `translate(${interpolate(slide, [0, 1], [-300, 0])}px, -50%)`;
       break;
-    case "right":
-      transformIn = `translateX(${interpolate(spr, [0, 1], [60, 0], { extrapolateRight: "clamp" })}px)`;
+    case 2: // da direita
+      transform = `translate(${interpolate(slide, [0, 1], [300, 0])}px, -50%)`;
       break;
-    case "scale":
-      transformIn = `scale(${interpolate(spr, [0, 1], [0.3, 1], { extrapolateRight: "clamp" })})`;
+    case 3: // zoom
+      transform = `translateY(-50%) scale(${interpolate(enter, [0, 1], [0.4, 1])})`;
       break;
   }
 
-  const opacity = interpolate(spr, [0, 0.2], [0, 1], { extrapolateRight: "clamp" });
-
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        transform: transformIn,
-        opacity,
-        color: highlight ? "#E53E3E" : "#FFFFFF",
-        fontFamily,
-        fontWeight: 800,
-        fontSize: 64,
-        letterSpacing: "-1px",
-        textTransform: "uppercase",
-        marginRight: "0.18em",
-        lineHeight: 1.1,
-        willChange: "transform, opacity",
-      }}
-    >
-      {word}
-    </span>
-  );
-}
-
-// ─── Técnica 2: WEIGHT SHIFT ──────────────────────────────────────────────────
-// Inspirado em caption-weight-shift do HyperFrames
-// A primeira linha começa bold e vai ficando light conforme a segunda linha entra
-function SubtitleLine({
-  words,
-  isFirstLine,
-  secondLineProgress,
-  highlightIndices,
-  wordOffset,
-}: {
-  words: string[];
-  isFirstLine: boolean;
-  secondLineProgress: number;
-  highlightIndices: number[];
-  wordOffset: number;
-}) {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const lineIn = spring({
-    frame,
-    fps,
-    config: { damping: 100, stiffness: 180 },
-    durationInFrames: 20,
-  });
-
-  const y       = interpolate(lineIn, [0, 1], [40, 0],  { extrapolateRight: "clamp" });
-  const opacity = interpolate(lineIn, [0, 0.3], [0, 1], { extrapolateRight: "clamp" });
-
-  // weight shift: primeira linha vai de 800→300 conforme segunda entra
-  const fontWeight = isFirstLine
-    ? Math.round(interpolate(secondLineProgress, [0, 1], [800, 300], { extrapolateRight: "clamp" }))
-    : 800;
+  const entranceOpacity =
+    mode === 1 || mode === 2
+      ? interpolate(slide, [0, 0.4], [0, 1], { extrapolateRight: "clamp" })
+      : interpolate(enter, [0, 0.25], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <div
       style={{
-        display: "flex",
-        flexWrap: "wrap",
-        justifyContent: "center",
-        transform: `translateY(${y}px)`,
-        opacity,
+        position: "absolute",
+        left: 0,
+        top: "50%",
+        width: "100%",
+        textAlign: "center",
+        fontFamily,
+        fontWeight: 400,
+        fontSize,
+        lineHeight: 1,
+        letterSpacing: "0.04em",
+        textTransform: "uppercase",
+        color,
+        transform,
+        opacity: entranceOpacity * exit,
         willChange: "transform, opacity",
       }}
     >
-      {words.map((word, i) => {
-        const globalIdx = wordOffset + i;
-        const isHighlight = highlightIndices.includes(globalIdx);
-        return (
-          <span
-            key={i}
-            style={{
-              display: "inline-block",
-              fontFamily,
-              fontWeight,
-              fontSize: 56,
-              lineHeight: 1.2,
-              color: isHighlight ? "#E53E3E" : "#FFFFFF",
-              marginRight: "0.22em",
-              transition: "none",
-              willChange: "font-weight",
-            }}
-          >
-            {word}
-          </span>
-        );
-      })}
+      {word}
     </div>
   );
 }
-
-// ─── Técnica 3: MORPH EXIT ────────────────────────────────────────────────────
-// Inspirado em morph-text do HyperFrames
-// Saída com blur crescente + opacity caindo — efeito "dissolve morph"
-
-// ─── Composição principal ─────────────────────────────────────────────────────
-
-const WORD_STAGGER  = 5;   // frames entre palavras do título
-const TITLE_START   = 4;   // frame em que o título começa
 
 export function LabelOverlay({
   title          = "FRASE DE IMPACTO",
   subtitle       = "complemento do que foi dito",
   highlightWords = [],
+  accentColor    = "#FFD700",
 }: TemplateProps) {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { durationInFrames, width } = useVideoConfig();
 
-  const titleWords    = title.split(" ");
-  const subtitleWords = subtitle.split(" ");
+  // Fluxo único de palavras: título + subtítulo concatenados.
+  const words = useMemo(() => {
+    return `${title} ${subtitle}`.split(/\s+/).filter(Boolean);
+  }, [title, subtitle]);
 
-  // Divide subtítulo em duas linhas (metade cada)
-  const midpoint     = Math.ceil(subtitleWords.length / 2);
-  const line1        = subtitleWords.slice(0, midpoint);
-  const line2        = subtitleWords.slice(midpoint);
+  // Distribui as palavras igualmente ao longo da duração total.
+  const slot = Math.max(6, Math.floor(durationInFrames / Math.max(1, words.length)));
+  const safeWidth = width * 0.9;
+  const baseSize = Math.round(width * 0.16); // ~220px numa composição 1080/1280
 
-  const titleEnd     = TITLE_START + titleWords.length * WORD_STAGGER + 8;
-  const line2Start   = titleEnd + 18; // quando linha 2 começa
-
-  // progresso da entrada da linha 2 (para o weight shift da linha 1)
-  const line2Progress = spring({
-    frame: Math.max(0, frame - line2Start),
-    fps,
-    config: { damping: 100, stiffness: 180 },
-    durationInFrames: 20,
-  });
-
-  // ── Saída morph: blur + opacity (técnica morph-text HyperFrames) ────────────
-  const exitStart = durationInFrames - 14;
-  const exitProg  = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
-    easing: Easing.bezier(0.4, 0, 1, 1),
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitOpacity   = 1 - exitProg;
-  const exitBlur      = interpolate(exitProg, [0, 1], [0, 18], { extrapolateRight: "clamp" });
-  const exitScale     = interpolate(exitProg, [0, 1], [1, 1.06], { extrapolateRight: "clamp" });
+  const accent = accentColor ?? "#FFD700";
+  const highlights = new Set(highlightWords ?? []);
 
   return (
     <AbsoluteFill style={{ background: "#000000", overflow: "hidden" }}>
 
-      {/* Vignette */}
+      {/* Vignette sutil */}
       <AbsoluteFill
         style={{
-          background: "radial-gradient(ellipse at center, transparent 25%, rgba(0,0,0,0.9) 100%)",
+          background:
+            "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.85) 100%)",
           pointerEvents: "none",
         }}
       />
 
-      {/* Film grain */}
-      <AbsoluteFill
-        style={{
-          opacity: 0.03,
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-          backgroundSize: "200px 200px",
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Wrapper com saída morph global */}
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "0 64px",
-          gap: 16,
-          opacity: exitOpacity,
-          filter: `blur(${exitBlur}px)`,
-          transform: `scale(${exitScale})`,
-          willChange: "opacity, filter, transform",
-        }}
-      >
-
-        {/* ── Título: kinetic slam palavra por palavra ─── */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            alignItems: "center",
-            maxWidth: "100%",
-          }}
-        >
-          {titleWords.map((word, i) => (
-            <Sequence key={i} from={TITLE_START + i * WORD_STAGGER} layout="none">
-              <TitleWord
-                word={word}
-                index={i}
-                highlight={(highlightWords ?? []).includes(i)}
+      {/* Container central das palavras */}
+      <AbsoluteFill style={{ overflow: "hidden" }}>
+        {words.map((word, i) => {
+          const fontSize = fitFontSize(word, safeWidth, baseSize);
+          const mode = (i % 4) as SlamMode;
+          const color = highlights.has(i) ? accent : "#FFFFFF";
+          return (
+            <Sequence
+              key={i}
+              from={i * slot}
+              durationInFrames={slot}
+              layout="none"
+            >
+              <SlamWord
+                word={word.toUpperCase()}
+                mode={mode}
+                slotFrames={slot}
+                fontSize={fontSize}
+                color={color}
               />
             </Sequence>
-          ))}
-        </div>
-
-        {/* ── Subtítulo linha 1: weight shift ─── */}
-        <Sequence from={titleEnd} layout="none">
-          <SubtitleLine
-            words={line1}
-            isFirstLine
-            secondLineProgress={line2Progress}
-            highlightIndices={highlightWords ?? []}
-            wordOffset={0}
-          />
-        </Sequence>
-
-        {/* ── Subtítulo linha 2: entra depois, bold ─── */}
-        {line2.length > 0 && (
-          <Sequence from={line2Start} layout="none">
-            <SubtitleLine
-              words={line2}
-              isFirstLine={false}
-              secondLineProgress={0}
-              highlightIndices={highlightWords ?? []}
-              wordOffset={midpoint}
-            />
-          </Sequence>
-        )}
-
+          );
+        })}
       </AbsoluteFill>
     </AbsoluteFill>
   );
