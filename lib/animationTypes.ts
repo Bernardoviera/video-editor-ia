@@ -1,13 +1,19 @@
 export type CaptionStyle = 'bold' | 'bounce' | 'clean'
 
-export type TemplateName = 'LabelOverlay'
+export type TemplateName =
+  | 'LabelOverlay'   // kinetic-slam: palavra gigante, 4 entradas, impacto
+  | 'PillKaraoke'    // legenda em pílula estilo Reels, neutra/explicativa
+  | 'NeonGlow'       // neon ciano/rosa, hype/energia
+  | 'MatrixDecode'   // decode verde estilo hacker, tecnologia/revelação
+  | 'GradientFill'   // gradiente Siri, premium/emocional
 
 export const SUBTITLE_SUPPRESS_TEMPLATES: TemplateName[] = []
 
 export interface TemplateProps {
   title?:          string
   subtitle?:       string
-  highlightWords?: number[]  // índices das palavras do subtítulo a destacar em vermelho
+  highlightWords?: number[]  // índices das palavras (title+subtitle) a destacar
+  accentColor?:    string    // cor de destaque (default por template)
 }
 
 export interface AnimationEvent {
@@ -29,9 +35,37 @@ export interface TemplateInfo {
 export const TEMPLATE_CATALOG: TemplateInfo[] = [
   {
     name:         'LabelOverlay',
-    label:        'Label Overlay',
-    icon:         '🏷️',
-    desc:         'Kinetic typography — palavras entram com slam, weight shift e morph',
+    label:        'Kinetic Slam',
+    icon:         '💥',
+    desc:         'Palavra gigante por vez (Anton), 4 entradas com impacto. Momentos de punch.',
     defaultProps: { title: 'FRASE DE IMPACTO', subtitle: 'complemento do que foi dito' },
+  },
+  {
+    name:         'PillKaraoke',
+    label:        'Pill Karaoke',
+    icon:         '💊',
+    desc:         'Legenda em pílula estilo Reels (Poppins). Narração neutra/explicativa.',
+    defaultProps: { title: '', subtitle: 'legenda estilo reels' },
+  },
+  {
+    name:         'NeonGlow',
+    label:        'Neon Glow',
+    icon:         '🌃',
+    desc:         'Neon ciano/rosa com brilho (Outfit). Momentos de hype/energia.',
+    defaultProps: { title: '', subtitle: 'energia neon' },
+  },
+  {
+    name:         'MatrixDecode',
+    label:        'Matrix Decode',
+    icon:         '🟩',
+    desc:         'Texto verde que decodifica (Space Grotesk). Tecnologia/revelação.',
+    defaultProps: { title: '', subtitle: 'decodificando' },
+  },
+  {
+    name:         'GradientFill',
+    label:        'Gradient Fill',
+    icon:         '🌈',
+    desc:         'Gradiente Siri varrendo o texto (Montserrat). Premium/emocional.',
+    defaultProps: { title: '', subtitle: 'momento premium' },
   },
 ]

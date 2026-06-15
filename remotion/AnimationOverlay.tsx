@@ -1,7 +1,7 @@
 import React from 'react'
 import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion'
 import type { AnimationEvent, TemplateName, TemplateProps } from '../lib/animationTypes'
-import { LabelOverlay } from './templates'
+import { LabelOverlay, PillKaraoke, NeonGlow, MatrixDecode, GradientFill } from './templates'
 
 interface Props {
   events:  AnimationEvent[]
@@ -12,6 +12,10 @@ interface Props {
 function TemplateSwitch({ template, props }: { template: TemplateName; props: TemplateProps }) {
   switch (template) {
     case 'LabelOverlay': return <LabelOverlay {...props} />
+    case 'PillKaraoke':  return <PillKaraoke {...props} />
+    case 'NeonGlow':     return <NeonGlow {...props} />
+    case 'MatrixDecode': return <MatrixDecode {...props} />
+    case 'GradientFill': return <GradientFill {...props} />
     default:             return <LabelOverlay {...props} />
   }
 }

@@ -1,1 +1,5 @@
 export { LabelOverlay } from './LabelOverlay'
+export { PillKaraoke } from './PillKaraoke'
+export { NeonGlow }    from './NeonGlow'
+export { MatrixDecode } from './MatrixDecode'
+export { GradientFill } from './GradientFill'
