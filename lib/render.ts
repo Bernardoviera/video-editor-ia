@@ -5,6 +5,7 @@ import { tmpdir } from 'os'
 import path from 'path'
 import ffmpegStatic from 'ffmpeg-static'
 import { generateAss, Word } from './subtitles'
+import { attachTokens } from './captions'
 import type { AnimationEvent, CaptionStyle } from './animationTypes'
 
 export interface RenderOptions {
@@ -97,11 +98,16 @@ export async function renderVideo(options: RenderOptions): Promise<{ filePath: s
     words,
     timestamp,
     captionStyle = 'bounce',
-    animationEvents = [],
+    animationEvents: rawEvents = [],
     width = 1080,
     height = 1920,
     duration,
   } = options
+
+  // Sincroniza cada evento com a fala: anexa tokens (tempos relativos por palavra)
+  // derivados do timestamp do Whisper. Templates como SyncedCaption usam isso para
+  // acender a palavra exatamente quando é dita.
+  const animationEvents = attachTokens(rawEvents, words)
 
   const outputDir   = tmpdir()
   const assFilename = `sub-${timestamp}.ass`

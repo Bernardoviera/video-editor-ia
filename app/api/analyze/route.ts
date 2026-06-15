@@ -9,6 +9,7 @@ const VALID_TEMPLATES: TemplateName[] = [
   "MatrixDecode",
   "GradientFill",
   "TerminalCode",
+  "SyncedCaption",
 ];
 
 export async function POST(req: NextRequest) {
@@ -40,6 +41,7 @@ Para CADA momento você também escolhe o ESTILO de animação que combina com o
 - "MatrixDecode": texto verde que decodifica (hacker). Use em TECNOLOGIA, dados, números, revelações, "segredos".
 - "GradientFill": gradiente colorido fluido (premium). Use em momentos EMOCIONAIS, aspiracionais, sofisticados.
 - "TerminalCode": janela de terminal macOS digitando um comando e sua saída. Use quando o conteúdo for CÓDIGO, COMANDOS, programação, dev, ferramentas técnicas. Neste caso "title" = o comando (ex: "npm run build"), "subtitle" = a saída/resultado.
+- "SyncedCaption": legenda sincronizada palavra-a-palavra com a fala (estilo TikTok, palavra acende quando é dita). Use quando quiser DESTACAR LITERALMENTE a fala daquele trecho como legenda animada. O "subtitle" deve ser a frase EXATA falada no trecho (a sincronização vem do áudio automaticamente).
 
 Para cada momento, retorne um objeto com:
 - "template": um dos 5 valores acima, escolhido pelo tom
