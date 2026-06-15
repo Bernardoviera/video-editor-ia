@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import type { AnimationEvent, TemplateName } from "@/lib/animationTypes";
+import { getCombinedSkillContent, detectSkillsForTemplates } from "@/lib/skills";
 
 const VALID_TEMPLATES: TemplateName[] = [
   "LabelOverlay",
@@ -11,6 +12,65 @@ const VALID_TEMPLATES: TemplateName[] = [
   "TerminalCode",
   "SyncedCaption",
 ];
+
+const BASE_SYSTEM_PROMPT = `Você é um editor de vídeo especialista em motion graphics.
+Analise a transcrição fornecida e identifique entre 3 e 5 momentos para adicionar animações de texto.
+
+REGRAS ABSOLUTAS:
+- Use APENAS texto que aparece literalmente na transcrição. Não invente, não parafraseie.
+- Retorne APENAS um array JSON puro, sem markdown, sem explicações, sem código de bloco.
+- Gere entre 3 e 5 animações. Varie os templates conforme o tom — não use sempre o mesmo.
+- Não sobreponha intervalos: cada evento deve ter startTime + duration <= próximo startTime.
+
+Schema de cada objeto no array:
+{ "template": string, "title": string, "subtitle": string, "startTime": number, "duration": number }
+
+Exemplo de retorno:
+[
+  { "template": "NeonGlow", "title": "INCRÍVEL", "subtitle": "isso vai mudar tudo", "startTime": 5.2, "duration": 2.5 },
+  { "template": "LabelOverlay", "title": "MUDA TUDO", "subtitle": "e ninguém percebeu", "startTime": 12.0, "duration": 3.0 }
+]`;
+
+/**
+ * Step 1 — Skill Detection: ask gpt-4o-mini which templates are good candidates
+ * for this transcription. Returns a subset of VALID_TEMPLATES.
+ */
+async function detectCandidateTemplates(
+  client: OpenAI,
+  transcriptionText: string,
+): Promise<TemplateName[]> {
+  const detectionPrompt = `Você receberá uma transcrição de vídeo. Sua tarefa é identificar quais templates de animação são candidatos relevantes para o conteúdo.
+
+Templates disponíveis: ${VALID_TEMPLATES.join(", ")}
+
+Retorne APENAS um array JSON com os nomes dos templates candidatos (subconjunto da lista acima), sem explicações.
+Exemplo: ["LabelOverlay", "NeonGlow", "MatrixDecode"]
+
+Transcrição:
+${transcriptionText}`;
+
+  try {
+    const res = await client.chat.completions.create({
+      model:       "gpt-4o-mini",
+      messages:    [{ role: "user", content: detectionPrompt }],
+      temperature: 0.1,
+      max_tokens:  100,
+    });
+
+    const raw     = res.choices[0]?.message?.content ?? "[]";
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const parsed  = JSON.parse(cleaned) as string[];
+
+    if (!Array.isArray(parsed)) return VALID_TEMPLATES;
+
+    return parsed.filter((t): t is TemplateName =>
+      VALID_TEMPLATES.includes(t as TemplateName),
+    );
+  } catch {
+    // If detection fails, fall back to all templates
+    return VALID_TEMPLATES;
+  }
+}
 
 export async function POST(req: NextRequest) {
   const { segments, userPrompt } = (await req.json()) as {
@@ -28,42 +88,32 @@ export async function POST(req: NextRequest) {
     .map((s) => `[${s.start.toFixed(1)}s → ${s.end.toFixed(1)}s] ${s.text}`)
     .join("\n");
 
-  const effectivePrompt = userPrompt.trim() || "Identifique os 3 a 5 momentos de maior impacto.";
+  const effectivePrompt =
+    userPrompt.trim() || "Identifique os 3 a 5 momentos de maior impacto.";
 
-  const systemPrompt = `Você é um editor de vídeo. Analise a transcrição e identifique os momentos mais impactantes para adicionar animações de texto.
+  try {
+    // -----------------------------------------------------------------------
+    // Step 1: Skill Detection (gpt-4o-mini)
+    // -----------------------------------------------------------------------
+    const candidateTemplates = await detectCandidateTemplates(client, transcriptionText);
 
-REGRA ABSOLUTA: Use APENAS texto que aparece literalmente na transcrição. Não invente, não parafraseie.
+    // -----------------------------------------------------------------------
+    // Step 2: Skills Injection
+    // -----------------------------------------------------------------------
+    const relevantSkills    = detectSkillsForTemplates(candidateTemplates);
+    const skillsContent     = getCombinedSkillContent(relevantSkills);
+    const systemPrompt      = `${BASE_SYSTEM_PROMPT}\n\n---\n\n${skillsContent}`;
 
-Para CADA momento você também escolhe o ESTILO de animação que combina com o TOM do que está sendo dito. Estilos disponíveis (campo "template"):
-- "LabelOverlay": palavra gigante por vez, impacto máximo. Use em FRASES DE PUNCH, afirmações fortes, chamadas de atenção.
-- "PillKaraoke": legenda limpa estilo Reels. Use em NARRAÇÃO NEUTRA, explicações, conteúdo informativo.
-- "NeonGlow": neon ciano/rosa brilhante. Use em momentos de HYPE, energia, empolgação, hype de produto.
-- "MatrixDecode": texto verde que decodifica (hacker). Use em TECNOLOGIA, dados, números, revelações, "segredos".
-- "GradientFill": gradiente colorido fluido (premium). Use em momentos EMOCIONAIS, aspiracionais, sofisticados.
-- "TerminalCode": janela de terminal macOS digitando um comando e sua saída. Use quando o conteúdo for CÓDIGO, COMANDOS, programação, dev, ferramentas técnicas. Neste caso "title" = o comando (ex: "npm run build"), "subtitle" = a saída/resultado.
-- "SyncedCaption": legenda sincronizada palavra-a-palavra com a fala (estilo TikTok, palavra acende quando é dita). Use quando quiser DESTACAR LITERALMENTE a fala daquele trecho como legenda animada. O "subtitle" deve ser a frase EXATA falada no trecho (a sincronização vem do áudio automaticamente).
-
-Para cada momento, retorne um objeto com:
-- "template": um dos 5 valores acima, escolhido pelo tom
-- "title": frase curta de impacto retirada da transcrição (2 a 4 palavras, TODAS EM MAIÚSCULAS)
-- "subtitle": complemento ou continuação do que foi dito (pode ser frase completa, capitalização normal)
-- "startTime": número em segundos (quando começa na transcrição)
-- "duration": número entre 2.0 e 3.5 segundos
-
-Gere entre 3 e 5 animações. Varie os estilos conforme o tom — não use sempre o mesmo. Não sobreponha intervalos. Espaçe bem ao longo do vídeo.
-
-Retorne APENAS um array JSON puro, sem markdown, sem explicações:
-[
-  { "template": "NeonGlow", "title": "TÍTULO EM CAPS", "subtitle": "complemento da frase", "startTime": 5.2, "duration": 2.5 },
-  ...
-]`;
-
-  const userMessage = `Transcrição (use SOMENTE este conteúdo para os textos):
+    // -----------------------------------------------------------------------
+    // Step 3: Generation (gpt-4o)
+    // -----------------------------------------------------------------------
+    const userMessage = `Transcrição (use SOMENTE este conteúdo para os textos):
 ${transcriptionText}
+
+Templates candidatos para este conteúdo: ${candidateTemplates.join(", ")}
 
 Instrução adicional: ${effectivePrompt}`;
 
-  try {
     const completion = await client.chat.completions.create({
       model:       "gpt-4o",
       messages:    [
@@ -77,7 +127,14 @@ Instrução adicional: ${effectivePrompt}`;
     const raw     = completion.choices[0]?.message?.content ?? "[]";
     const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 
-    let parsed: { template?: string; title?: string; subtitle?: string; startTime: number; duration: number }[] = [];
+    let parsed: {
+      template?: string;
+      title?: string;
+      subtitle?: string;
+      startTime: number;
+      duration: number;
+    }[] = [];
+
     try {
       parsed = JSON.parse(cleaned);
       if (!Array.isArray(parsed)) parsed = [];
@@ -87,9 +144,12 @@ Instrução adicional: ${effectivePrompt}`;
     }
 
     const events: AnimationEvent[] = parsed.map((item, i) => {
-      const template: TemplateName = VALID_TEMPLATES.includes(item.template as TemplateName)
+      const template: TemplateName = VALID_TEMPLATES.includes(
+        item.template as TemplateName,
+      )
         ? (item.template as TemplateName)
         : "LabelOverlay";
+
       return {
         id:        `ev-${i}-${Date.now()}`,
         template,
