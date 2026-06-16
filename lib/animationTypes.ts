@@ -3,7 +3,6 @@ export type CaptionStyle = 'bold' | 'bounce' | 'clean'
 export type TemplateName =
   | 'LabelOverlay'   // kinetic-slam: palavra gigante, 4 entradas, impacto
   | 'PillKaraoke'    // legenda em pílula estilo Reels, neutra/explicativa
-  | 'NeonGlow'       // neon ciano/rosa, hype/energia
   | 'MatrixDecode'   // decode verde estilo hacker, tecnologia/revelação
   | 'GradientFill'   // gradiente Siri, premium/emocional
   | 'TerminalCode'   // terminal macOS digitando, código/tech/dev
@@ -58,13 +57,6 @@ export const TEMPLATE_CATALOG: TemplateInfo[] = [
     icon:         '💊',
     desc:         'Legenda em pílula estilo Reels (Poppins). Narração neutra/explicativa.',
     defaultProps: { title: '', subtitle: 'legenda estilo reels' },
-  },
-  {
-    name:         'NeonGlow',
-    label:        'Neon Glow',
-    icon:         '🌃',
-    desc:         'Neon ciano/rosa com brilho (Outfit). Momentos de hype/energia.',
-    defaultProps: { title: '', subtitle: 'energia neon' },
   },
   {
     name:         'MatrixDecode',

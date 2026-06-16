@@ -6,7 +6,6 @@ import { getCombinedSkillContent, detectSkillsForTemplates } from "@/lib/skills"
 const VALID_TEMPLATES: TemplateName[] = [
   "LabelOverlay",
   "PillKaraoke",
-  "NeonGlow",
   "MatrixDecode",
   "GradientFill",
   "TerminalCode",
@@ -27,7 +26,7 @@ Schema de cada objeto no array:
 
 Exemplo de retorno:
 [
-  { "template": "NeonGlow", "title": "INCRÍVEL", "subtitle": "isso vai mudar tudo", "startTime": 5.2, "duration": 2.5 },
+  { "template": "MatrixDecode", "title": "97% dos casos", "subtitle": "detectados pelo algoritmo", "startTime": 5.2, "duration": 2.5 },
   { "template": "LabelOverlay", "title": "MUDA TUDO", "subtitle": "e ninguém percebeu", "startTime": 12.0, "duration": 3.0 }
 ]`;
 

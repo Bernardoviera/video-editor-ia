@@ -43,11 +43,6 @@ const TEMPLATE_TONES = `# Quando Usar Cada Template pelo Tom do Conteúdo
 - **Use quando:** o conteúdo é narração contínua, explicação técnica, ou conteúdo educativo sem emoção excessiva
 - **Exemplos de contexto:** explicações passo a passo, tutoriais, histórias
 
-## NeonGlow — Neon Glow
-- **Tom:** hype, energia, empolgação, entusiasmo, produtos/lançamentos
-- **Use quando:** o trecho transmite animação, vibração, empolgação, lançamento de produto
-- **Exemplos de contexto:** "Isso é incrível!", "Lançando agora", "Você não vai acreditar"
-
 ## MatrixDecode — Matrix Decode
 - **Tom:** tecnologia, dados, números, revelações, "segredos", hacking
 - **Use quando:** o conteúdo menciona estatísticas, código, dados técnicos, descobertas, revelações surpreendentes
@@ -83,11 +78,6 @@ const PROP_PATTERNS = `# Padrões de Preenchimento de Props por Template
 - \`title\`: deixar vazio (\`""\`)
 - \`subtitle\`: frase completa da transcrição, capitalização normal
 - Exemplo: \`{ "title": "", "subtitle": "Vou explicar como funciona o algoritmo passo a passo" }\`
-
-## NeonGlow
-- \`title\`: palavra-chave de impacto em CAPS (1-3 palavras)
-- \`subtitle\`: contexto ou frase de apoio (capitalização normal)
-- Exemplo: \`{ "title": "INCRÍVEL", "subtitle": "isso vai mudar sua vida" }\`
 
 ## MatrixDecode
 - \`title\`: dado, número, revelação ou termo técnico

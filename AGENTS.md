@@ -34,7 +34,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Templates em `remotion/templates/` — cada arquivo exporta uma função React
 - Tipos em `lib/animationTypes.ts` — sempre atualizar `TemplateProps` ao adicionar props
 - Identidade visual do `LabelOverlay` (estilo kinetic-slam, baseado no HyperFrames): fundo `#000000`, texto `#FFFFFF`, destaque dourado `#FFD700`, fonte Anton uppercase. Uma palavra gigante por vez, centralizada, com 4 modos de entrada alternados (cima/esquerda/direita/zoom) e overshoot.
-- Templates ativos (6): `LabelOverlay` (kinetic-slam, impacto), `PillKaraoke` (legenda Reels, neutro), `NeonGlow` (neon ciano/rosa, hype), `MatrixDecode` (decode verde, tech/revelação), `GradientFill` (gradiente Siri, premium/emocional), `TerminalCode` (terminal macOS digitando, código/dev — JetBrains Mono). O GPT-4 em `app/api/analyze/route.ts` escolhe o template pelo tom do conteúdo.
+- Templates ativos (6): `LabelOverlay` (kinetic-slam, impacto), `PillKaraoke` (legenda Reels, neutro), `MatrixDecode` (decode verde, tech/revelação), `GradientFill` (gradiente Siri, premium/emocional), `TerminalCode` (terminal macOS digitando, código/dev — JetBrains Mono), `SyncedCaption` (legenda sincronizada palavra-a-palavra estilo TikTok). O GPT-4 em `app/api/analyze/route.ts` escolhe o template pelo tom do conteúdo.
 
 ## Antes de escrever código Remotion
 
